@@ -1,7 +1,7 @@
-import process from "process";
 import { Buffer } from "buffer";
-import { text_encode } from "_encoding";
 import { _memorySize } from "_node:os";
+import process from "process";
+import { text_encode } from "_encoding";
 
 export * from "qjs:os";
 
@@ -85,7 +85,7 @@ function totalmem() {
 }
 
 function type() {
-	return "wasmedge";
+	return "wasm";
 }
 
 function uptime() {
@@ -94,7 +94,7 @@ function uptime() {
 
 function userInfo(options) {
 	const encoding = (options && options.encoding) || "utf8";
-	let username = "wasmedge";
+	let username = "wasm";
 	let _homedir = homedir();
 	if (encoding === "Buffer" || encoding === "buffer") {
 		username = Buffer.from(username, "utf8");

@@ -1,6 +1,10 @@
 #![allow(dead_code, unused_imports, unused_must_use)]
 
-use drop::{quickjs_sys::resolver, quickjs_sys::transpiler, Runtime, *};
+extern crate libc;
+
+use drop::{quickjs_sys::resolver, quickjs_sys::transpiler, Context, Runtime, *};
+use once_cell::sync::Lazy;
+use std::{ffi::CString, sync::Mutex};
 
 fn args_parse() -> (String, Vec<String>) {
     use argparse::ArgumentParser;
@@ -26,9 +30,30 @@ fn args_parse() -> (String, Vec<String>) {
     (file_path, rest_args)
 }
 
+static mut RT: Lazy<Mutex<Runtime>> = Lazy::new(|| {
+    let rt = Runtime::new();
+    Mutex::new(rt)
+});
+
+static mut CTX: Lazy<Mutex<Context>> = Lazy::new(|| unsafe {
+    let mut rt = RT.lock().unwrap();
+    let ctx = rt.new_context();
+    Mutex::new(ctx)
+});
+
+extern "C" fn exit() {
+    unsafe {
+        let mut ctx = CTX.lock().unwrap();
+        ctx.js_loop().unwrap();
+        // TODO: this needs to check for errors and propagate the exit code
+        ctx.eval_global_str("import('process').then(p=>p.emit('beforeExit'))".into());
+        ctx.js_loop().unwrap();
+    }
+}
+
 fn main() {
-    let mut rt = Runtime::new();
-    rt.run_with_context(|ctx| {
+    unsafe {
+        let mut ctx = CTX.lock().unwrap();
         let (file_path, mut rest_arg) = args_parse();
         let entrypoint =
             resolver::import(&file_path).expect(format!("file not found: {}", &file_path).as_str());
@@ -36,16 +61,11 @@ fn main() {
             .expect(format!("invalid format: {}", &file_path).as_str());
         rest_arg.insert(0, file_path.clone());
         ctx.put_args(rest_arg);
-        ctx.js_loop().unwrap();
-        let make_require_global = r#"
-        ;(async () => {
-            const { require } = await import("commonjs");
-            globalThis.require = require;
-        })();
-        "#;
-        ctx.eval_global_str(make_require_global.to_owned());
+        ctx.eval_global_str(include_str!("./main.js").into());
         ctx.promise_loop_poll();
+        ctx.eval_global_str(format!("globalThis.__filename = '{}'", &file_path).into());
         ctx.eval_module_str(code, &file_path);
         ctx.js_loop().unwrap();
-    });
+        libc::atexit(exit);
+    }
 }

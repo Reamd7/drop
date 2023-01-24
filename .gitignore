@@ -45,6 +45,7 @@ node_modules
 /dist
 *.d.ts
 /src/modules_js/crypto.js
+/src/modules_js/sinon.js
 /src/modules_js/memfs.js
 /src/modules_js/zlib.js
 /src/modules_js/chai.js

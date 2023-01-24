@@ -107,7 +107,7 @@ set(QJS_ROOT ${SOURCE_DIR})
 unset(SOURCE_DIR)
 
 add_custom_target(quickjs-wasi ALL DEPENDS wasisdk quickjs
-  COMMAND ccache ${WASICC} -msimd128 -mbulk-memory -ftls-model=local-exec -c
+  COMMAND ccache ${WASICC} -mbulk-memory -ftls-model=local-exec -c
   ${QJS_ROOT}/libbf.c ${QJS_ROOT}/cutils.c ${QJS_ROOT}/libunicode.c
   ${CMAKE_CURRENT_SOURCE_DIR}/src/quickjs/wapper.c ${QJS_ROOT}/libregexp.c ${QJS_ROOT}/quickjs-libc.c
   -DNO_OS_POLL=1 -DCONFIG_BIGNUM=1 -DCONFIG_VERSION='"wasi"' -O3 -D__wasi__

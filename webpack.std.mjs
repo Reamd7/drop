@@ -2,21 +2,22 @@ import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import webpack from "webpack";
 
-const ALL_PACKAGES = ["crypto", "memfs", "zlib", "uvu", "chai"];
+const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon"];
 
 const createConfig = (name) => {
 	/** @type {webpack.Configuration} */
-	const cryptoConfig = {
+	const config = {
 		mode: "production",
 		entry: `./src/modules_js/${name}.js.in`,
 		devtool: false,
-		target: "web",
+		target: name === "crypto" ? "web" : "node",
 		experiments: {
 			outputModule: true,
 		},
 		output: {
 			path: path.resolve("src/modules_js"),
 			filename: `${name}.js`,
+			chunkFormat: "module",
 			library: {
 				type: "module",
 			},
@@ -65,8 +66,15 @@ const createConfig = (name) => {
 		plugins: [
 			new webpack.ProgressPlugin(),
 			new webpack.ProvidePlugin({
+				Url: ["url", "Url"],
 				Buffer: ["buffer", "Buffer"],
 				process: "process",
+				setTimeout: ["timers", "setTimeout"],
+				clearTimeout: ["timers", "clearTimeout"],
+				setInterval: ["timers", "setInterval"],
+				clearInterval: ["timers", "clearInterval"],
+				setImmediate: ["timers", "setImmediate"],
+				clearImmediate: ["timers", "clearImmediate"],
 			}),
 		],
 		resolve: {
@@ -78,8 +86,13 @@ const createConfig = (name) => {
 				net: false,
 			},
 		},
+		node: {
+			global: true,
+			__dirname: true,
+			__filename: true,
+		},
 	};
-	return cryptoConfig;
+	return config;
 };
 
 export default ALL_PACKAGES.map(createConfig);

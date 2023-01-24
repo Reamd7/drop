@@ -1,1 +1,34 @@
-export * from "uvu";
+process.env.FORCE_COLOR = "1";
+
+import { exec, suite, test } from "uvu";
+
+let _doneSym = Symbol("done");
+let _suites = new Set();
+let _suite = (name) => {
+	const s = suite(name);
+	let _run = s.run;
+	s.run = () => {
+		if (s[_doneSym]) return;
+		s[_doneSym] = true;
+		_run();
+	};
+	_suites.add(s);
+	return s;
+};
+let _test = (name, fn) => {
+	test(name, fn);
+	_suites.add(test);
+};
+
+// auto run tests on exit
+process.once("beforeExit", async () => {
+	// todo: this swallows test exceptions
+	_suites.forEach((s) => s.run());
+	globalThis.UVU_DEFER = 1;
+	let idx = 0;
+	globalThis.UVU_INDEX = idx++;
+	globalThis.UVU_QUEUE.push(["Test Results:"]);
+	await exec(false /* bail */);
+});
+
+export { _suite as suite, _test as test };

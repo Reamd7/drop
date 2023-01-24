@@ -1,3 +1,4 @@
+import { assert } from "chai";
 import buffer from "buffer";
 import crypto from "crypto";
 import events from "events";
@@ -5,6 +6,7 @@ import fs from "fs";
 import memfs from "memfs";
 import path from "path";
 import stream from "stream";
+import { suite } from "uvu";
 import url from "url";
 import util from "util";
 import zlib from "zlib";
@@ -13,51 +15,71 @@ interface Test {
 	readonly content: string;
 }
 
-const test: Test = { content: "hello world" };
-console.log(test.content);
+const urlTest = suite("basics");
+urlTest("url module", () => {
+	const keys = Object.keys(url);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing url:");
-console.log("------------------");
-console.log(Object.keys(url));
+const zlibTest = suite("zlib");
+zlibTest("zlib module", () => {
+	const keys = Object.keys(zlib);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing zlib:");
-console.log("------------------");
-console.log(Object.keys(zlib));
+const memfsTest = suite("memfs");
+memfsTest("memfs module", () => {
+	const keys = Object.keys(memfs);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing memfs:");
-console.log("------------------");
-console.log(Object.keys(memfs));
+const utilTest = suite("util");
+utilTest("util module", () => {
+	const keys = Object.keys(util);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing util:");
-console.log("------------------");
-console.log(Object.keys(util));
+const streamTest = suite("stream");
+streamTest("stream module", () => {
+	const keys = Object.keys(stream);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing stream:");
-console.log("------------------");
-console.log(Object.keys(stream));
+const pathTest = suite("path");
+pathTest("path module", () => {
+	const keys = Object.keys(path);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing events:");
-console.log("------------------");
-console.log(Object.keys(events));
+const fsTest = suite("fs");
+fsTest("fs module", () => {
+	const keys = Object.keys(fs);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing buffer:");
-console.log("------------------");
-console.log(Object.keys(buffer));
+const eventsTest = suite("events");
+eventsTest("events module", () => {
+	const keys = Object.keys(events);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing path:");
-console.log("------------------");
-console.log(Object.keys(path));
+const cryptoTest = suite("crypto");
+cryptoTest("crypto module", () => {
+	const keys = Object.keys(crypto);
+	assert.isNotEmpty(keys);
+	const md5 = crypto.createHash("md5");
+	md5.update("hello world");
+	assert.equal(md5.digest("hex"), "5eb63bbbe01eeed093cb22bb8f5acdc3");
+});
 
-console.log("testing fs:");
-console.log("------------------");
-console.log(Object.keys(fs));
+const bufferTest = suite("buffer");
+bufferTest("buffer module", () => {
+	const keys = Object.keys(buffer);
+	assert.isNotEmpty(keys);
+});
 
-console.log("testing crypto:");
-console.log("------------------");
-const md5 = crypto.createHash("md5");
-md5.update("hello world");
-console.log(md5.digest("hex"));
-
-console.log("testing commonjs:");
-console.log("------------------");
-console.log(JSON.stringify(require("./test.cjs")));
+const cjsTest = suite("cjs");
+cjsTest("cjs module", () => {
+	const keys = require("./test.cjs");
+	assert.isNotEmpty(keys);
+});

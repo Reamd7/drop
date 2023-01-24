@@ -164,10 +164,12 @@ impl Runtime {
     }
 
     pub fn run_with_context<F: FnMut(&mut Context) -> R, R>(&mut self, mut f: F) -> R {
-        unsafe {
-            let mut ctx = Context::new_with_rt(self.0);
-            f(&mut ctx)
-        }
+        let mut ctx = self.new_context();
+        f(&mut ctx)
+    }
+
+    pub fn new_context(&mut self) -> Context {
+        unsafe { Context::new_with_rt(self.0) }
     }
 }
 

@@ -1,12 +1,18 @@
+import { Readable, Writable } from "./stream";
+
+import { EventEmitter } from "./events";
+
+const processEmitter = new EventEmitter();
+
 function unimplemented(name) {
 	throw new Error("Node.js process " + name + " is not supported");
 }
 
-var title = "wasmedge_quickjs";
+var title = "drop";
 var arch = "wasm";
 var platform = "wasi";
-var env = globalThis.env;
-var argv = globalThis.argv;
+var env = globalThis.env || {};
+var argv = globalThis.argv || [];
 var execArgv = [];
 var version = "v16.8.0";
 var versions = {};
@@ -31,7 +37,7 @@ var chdir = function (dir) {
 };
 
 var release = {
-	name: "wasmedge_quickjs",
+	name: "drop",
 	sourceUrl: "",
 	headersUrl: "",
 	libUrl: "",
@@ -93,15 +99,53 @@ var _debugProcess = noop;
 var _debugEnd = noop;
 var _startProfilerIdleNotifier = noop;
 var _stopProfilerIdleNotifier = noop;
-var stdout = undefined;
-var stderr = undefined;
-var stdin = undefined;
+class StandardOutputStream extends Writable {
+	isTTY = true;
+	_buf = "";
+	_flusher;
+	constructor(flusher) {
+		super();
+		this._flusher = flusher;
+	}
+	_write(chunk, _encoding, callback) {
+		const str = chunk.toString();
+		if (str.endsWith("\n")) {
+			this._buf += str.slice(0, -1);
+			this._flusher(this._buf);
+			this._buf = "";
+		} else {
+			this._buf += str;
+		}
+		callback();
+	}
+}
+var stdout = new StandardOutputStream(console.log);
+var stderr = new StandardOutputStream(console.error);
+var stdin = new (class extends Readable {
+	constructor() {
+		super();
+		this.input = [];
+	}
+
+	_read() {
+		if (this.input.length) {
+			this.push(this.input.shift());
+		} else {
+			this.push(null);
+		}
+	}
+
+	addInput(data) {
+		this.input.push(data);
+		this.emit("readable");
+	}
+})();
 var abort = noop;
 var pid = 2;
 var ppid = 1;
-var execPath = "wasmedge-quickjs";
+var execPath = "drop";
 var debugPort = 9229;
-var argv0 = "wasmedge-quickjs";
+var argv0 = "drop";
 var _preload_modules = [];
 var setSourceMapsEnabled = noop;
 
@@ -152,20 +196,25 @@ hrtime.bigint = function (time) {
 var _maxListeners = 10;
 var _events = {};
 var _eventsCount = 0;
-function on() {
+function on(...args) {
+	processEmitter.on(...args);
+	return process;
+}
+function once(...args) {
+	processEmitter.once(...args);
+	return process;
+}
+function off(...args) {
+	processEmitter.off(...args);
 	return process;
 }
 var addListener = on;
-var once = on;
-var off = on;
 var removeListener = on;
-var removeAllListeners = on;
-var emit = noop;
-var prependListener = on;
-var prependOnceListener = on;
-function listeners(name) {
-	return [];
-}
+var removeAllListeners = off;
+var emit = processEmitter.emit.bind(processEmitter);
+var prependListener = processEmitter.prependListener.bind(processEmitter);
+var prependOnceListener = processEmitter.prependOnceListener.bind(processEmitter);
+var listeners = processEmitter.listeners.bind(processEmitter);
 var process = {
 	version: version,
 	versions: versions,
