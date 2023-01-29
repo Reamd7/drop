@@ -5,6 +5,7 @@ import events from "events";
 import fs from "fs";
 import memfs from "memfs";
 import path from "path";
+import rc from "rc";
 import stream from "stream";
 import { suite } from "uvu";
 import url from "url";
@@ -82,4 +83,12 @@ const cjsTest = suite("cjs");
 cjsTest("cjs module", () => {
 	const keys = require("./test.cjs");
 	assert.isNotEmpty(keys);
+});
+
+const rcTest = suite("rc");
+rcTest("rc module", () => {
+	const data = rc("yo", {
+		foo: "bar",
+	});
+	assert.equal(data.foo, "bar");
 });

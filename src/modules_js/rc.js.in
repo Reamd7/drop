@@ -1,0 +1,3 @@
+import * as rc from "rc";
+export * from "rc";
+export default rc;

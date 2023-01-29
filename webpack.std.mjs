@@ -2,7 +2,7 @@ import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import webpack from "webpack";
 
-const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon"];
+const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon", "rc"];
 
 const createConfig = (name) => {
 	/** @type {webpack.Configuration} */
