@@ -1,20 +1,17 @@
 // Copyright Joyent and Node contributors. All rights reserved. MIT license.
 "use strict";
 
-import { ERR_INVALID_ARG_VALUE, ERR_USE_AFTER_CLOSE } from "../errors";
-
+import { charLengthAt, charLengthLeft, commonPrefix, kSubstringSearch } from "./utils";
+import { clearScreenDown, cursorTo, moveCursor } from "./callbacks";
+import { getStringWidth, inspect, stripVTControlCharacters } from "../util/inspect";
 import { validateAbortSignal, validateArray, validateString, validateUint32 } from "../validators";
-import { kEmptyObject } from "../util";
-import { inspect, getStringWidth, stripVTControlCharacters } from "internal/util/inspect";
+
+import { ERR_INVALID_ARG_VALUE } from "../errors";
 import EventEmitter from "events";
-import { charLengthAt, charLengthLeft, commonPrefix, kSubstringSearch } from "internal/readline/utils";
-import { emitKeypressEvents } from "./emitKeypressEvents";
-import { clearScreenDown, cursorTo, moveCursor } from "internal/readline/callbacks";
-
+import { Readable } from "stream";
 import { StringDecoder } from "string_decoder";
-
-// Lazy load Readable for startup performance.
-let Readable;
+import { emitKeypressEvents } from "./emitKeypressEvents";
+import { kEmptyObject } from "../util";
 
 const kHistorySize = 30;
 const kMaxUndoRedoStackSize = 2048;
@@ -331,7 +328,7 @@ class Interface extends InterfaceConstructor {
 
 	question(query, cb) {
 		if (this.closed) {
-			throw new ERR_USE_AFTER_CLOSE("readline");
+			throw new Error("readline");
 		}
 		if (this[kQuestionCallback]) {
 			this.prompt();
@@ -1215,11 +1212,8 @@ class Interface extends InterfaceConstructor {
 	 * }} InterfaceAsyncIterator
 	 * @returns {InterfaceAsyncIterator}
 	 */
-	[SymbolAsyncIterator]() {
+	[Symbol.asyncIterator]() {
 		if (this[kLineObjectStream] === undefined) {
-			if (Readable === undefined) {
-				Readable = require("stream").Readable;
-			}
 			const readable = new Readable({
 				objectMode: true,
 				read: () => {

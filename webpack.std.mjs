@@ -2,7 +2,7 @@ import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import webpack from "webpack";
 
-const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon", "rc"];
+const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon", "rc", "nyc"];
 
 const createConfig = (name) => {
 	/** @type {webpack.Configuration} */
@@ -39,6 +39,7 @@ const createConfig = (name) => {
 				"stream",
 				"string_decoder",
 				"timers",
+				"module",
 				"tty",
 				"url",
 				"util",

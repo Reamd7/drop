@@ -21,8 +21,7 @@
 
 "use strict";
 
-import net from "net";
-import internal from "_node:tty";
+import { isatty } from "_node:tty";
 import { ERR_INVALID_FD, ERR_TTY_INIT_FAILED } from "./internal/errors";
 import { getColorDepth, hasColors } from "./internal/tty";
 
@@ -42,19 +41,9 @@ function ReadStream(fd, options) {
 		throw new ERR_TTY_INIT_FAILED(ctx);
 	}
 
-	net.Socket.call(this, {
-		readableHighWaterMark: 0,
-		handle: tty,
-		manualStart: true,
-		...options,
-	});
-
 	this.isRaw = false;
 	this.isTTY = true;
 }
-
-Object.setPrototypeOf(ReadStream.prototype, net.Socket.prototype);
-Object.setPrototypeOf(ReadStream, net.Socket);
 
 ReadStream.prototype.setRawMode = function (flag) {
 	flag = !!flag;
@@ -77,12 +66,6 @@ function WriteStream(fd) {
 		throw new ERR_TTY_INIT_FAILED(ctx);
 	}
 
-	net.Socket.call(this, {
-		readableHighWaterMark: 0,
-		handle: tty,
-		manualStart: true,
-	});
-
 	// Prevents interleaved or dropped stdout/stderr output for terminals.
 	// As noted in the following reference, local TTYs tend to be quite fast and
 	// this behavior has become expected due historical functionality on OS X,
@@ -97,9 +80,6 @@ function WriteStream(fd) {
 		this.rows = winSize[1];
 	}
 }
-
-Object.setPrototypeOf(WriteStream.prototype, net.Socket.prototype);
-Object.setPrototypeOf(WriteStream, net.Socket);
 
 WriteStream.prototype.isTTY = true;
 

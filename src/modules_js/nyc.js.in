@@ -1,0 +1,29 @@
+"use strict";
+
+import { createInstrumenter } from "istanbul-lib-instrument";
+
+function InstrumenterFactory(options = {}) {
+	const instrumenter = createInstrumenter({
+		autoWrap: true,
+		coverageVariable: "__coverage__",
+		embedSource: true,
+		compact: options.compact,
+		preserveComments: options.preserveComments,
+		produceSourceMap: options.produceSourceMap,
+		ignoreClassMethods: options.ignoreClassMethods,
+		esModules: options.esModules,
+		parserPlugins: options.parserPlugins,
+	});
+
+	return {
+		instrumentSync(code, filename) {
+			var instrumented = instrumenter.instrumentSync(code, filename);
+			return instrumented;
+		},
+		lastFileCoverage() {
+			return instrumenter.lastFileCoverage();
+		},
+	};
+}
+
+export default InstrumenterFactory;

@@ -21,28 +21,9 @@
 
 "use strict";
 
-import { clearLine, clearScreenDown, cursorTo, moveCursor } from "./internal/readline/callbacks";
-
-import { emitKeypressEvents } from "./internal/readline/emitKeypressEvents";
-
-import promises from "readline/promises";
-
-import { AbortError } from "./internal/errors";
-
-import { inspect } from "./internal/util/inspect";
-
-import { kEmptyObject, promisify } from "./internal/util";
-
-import { validateAbortSignal } from "./internal/validators";
-
-/**
- * @typedef {import('./stream.js').Readable} Readable
- * @typedef {import('./stream.js').Writable} Writable
- */
-
-const {
-	Interface: _Interface,
+import {
 	InterfaceConstructor,
+	Interface as _Interface,
 	kAddHistory,
 	kDecoder,
 	kDeleteLeft,
@@ -75,7 +56,21 @@ const {
 	kWordLeft,
 	kWordRight,
 	kWriteToOutput,
-} = require("internal/readline/interface");
+} from  "./internal/readline/interface";
+import { clearLine, clearScreenDown, cursorTo, moveCursor } from "./internal/readline/callbacks";
+import { kEmptyObject, promisify } from "./internal/util";
+
+import { AbortError } from "./internal/errors";
+import { emitKeypressEvents } from "./internal/readline/emitKeypressEvents";
+import { inspect } from "./internal/util/inspect";
+import promises from "./internal/readline/promises";
+import { validateAbortSignal } from "./internal/validators";
+
+/**
+ * @typedef {import('./stream.js').Readable} Readable
+ * @typedef {import('./stream.js').Writable} Writable
+ */
+
 
 function Interface(input, output, completer, terminal) {
 	if (!(this instanceof Interface)) {

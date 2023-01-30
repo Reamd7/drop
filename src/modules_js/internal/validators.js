@@ -1,8 +1,9 @@
 import {
-	ERR_SOCKET_BAD_PORT,
 	ERR_INVALID_ARG_TYPE,
+	ERR_INVALID_ARG_VALUE,
 	ERR_INVALID_CALLBACK,
 	ERR_OUT_OF_RANGE,
+	ERR_SOCKET_BAD_PORT,
 	hideStackFrames,
 } from "./errors";
 
@@ -161,7 +162,18 @@ export const getValidMode = hideStackFrames((mode, type) => {
 	throw new ERR_OUT_OF_RANGE("mode", `an integer >= ${min} && <= ${max}`, mode);
 });
 
+export const validateArray = hideStackFrames((value, name, minLength = 0) => {
+  if (!Array.isArray(value)) {
+    throw new ERR_INVALID_ARG_TYPE(name, 'Array', value);
+  }
+  if (value.length < minLength) {
+    const reason = `must be longer than ${minLength}`;
+    throw new ERR_INVALID_ARG_VALUE(name, value, reason);
+  }
+});
+
 export default {
+	validateArray,
 	validatePort,
 	validateFunction,
 	validateString,

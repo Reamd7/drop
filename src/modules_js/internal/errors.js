@@ -750,3 +750,17 @@ export class ERR_FS_INVALID_SYMLINK_TYPE extends Error {
 		this.code = "ERR_FS_INVALID_SYMLINK_TYPE";
 	}
 }
+
+export class ERR_TTY_INIT_FAILED extends Error {
+	constructor() {
+		super("TTY initialization failed");
+		this.code = "ERR_TTY_INIT_FAILED";
+	}
+}
+
+export class ERR_INVALID_FD extends TypeError {
+	constructor() {
+		super("File descriptor is not a valid integer: NaN");
+		this.code = "ERR_INVALID_FD";
+	}
+}

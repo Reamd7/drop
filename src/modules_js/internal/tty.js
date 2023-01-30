@@ -22,7 +22,7 @@
 
 "use strict";
 
-const { validateInteger } = require("internal/validators");
+import { validateInteger } from "./validators";
 
 const COLORS_2 = 1;
 const COLORS_16 = 4;
@@ -112,29 +112,7 @@ function getColorDepth(env = process.env) {
 	) {
 		return COLORS_2;
 	}
-
-	/*
-  if (process.platform === 'win32') {
-    // Lazy load for startup performance.
-    if (OSRelease === undefined) {
-      const { release } = require('os');
-      OSRelease = String.prototype.split(release(), '.');
-    }
-    // Windows 10 build 10586 is the first Windows release that supports 256
-    // colors. Windows 10 build 14931 is the first release that supports
-    // 16m/TrueColor.
-    if (+OSRelease[0] >= 10) {
-      const build = +OSRelease[2];
-      if (build >= 14931)
-        return COLORS_16m;
-      if (build >= 10586)
-        return COLORS_256;
-    }
-
-    return COLORS_16;
-  }
-  */
-
+	
 	if (env.TMUX) {
 		return COLORS_256;
 	}
