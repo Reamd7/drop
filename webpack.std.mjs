@@ -77,6 +77,10 @@ const createConfig = (name) => {
 				setImmediate: ["timers", "setImmediate"],
 				clearImmediate: ["timers", "clearImmediate"],
 			}),
+			new webpack.IgnorePlugin({
+				contextRegExp: /@babel\/core/,
+				resourceRegExp: /import\.cjs/,
+			}),
 		],
 		resolve: {
 			extensions: [".js", ".js.in"],
@@ -86,6 +90,49 @@ const createConfig = (name) => {
 				child_process: false,
 				net: false,
 			},
+		},
+		module: {
+			rules: [
+				{
+					test: /browserslist\/node/,
+					loader: "string-replace-loader",
+					options: {
+						multiple: [
+							{
+								search: /require\(require\.resolve/g,
+								replace: "_non_webpack_require_(_non_webpack_require_.resolve",
+								strict: true,
+							},
+						],
+					},
+				},
+				{
+					test: [/@babel\/core\/lib\/config\/files\/configuration\.js/, /@babel\/core\/lib\/config\/files\/plugins\.js/],
+					loader: "string-replace-loader",
+					options: {
+						multiple: [
+							{
+								search: /require\.resolve/g,
+								replace: "_non_webpack_require_.resolve",
+								strict: true,
+							},
+						],
+					},
+				},
+				{
+					test: [/@babel\/core\/lib\/config\/files\/module-types\.js/],
+					loader: "string-replace-loader",
+					options: {
+						multiple: [
+							{
+								search: /\(require\)/g,
+								replace: "(_non_webpack_require_)",
+								strict: true,
+							},
+						],
+					},
+				},
+			],
 		},
 		node: {
 			global: true,
