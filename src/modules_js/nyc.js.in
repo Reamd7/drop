@@ -1,29 +1,15 @@
 "use strict";
 
+import { basename } from "path";
 import { createInstrumenter } from "istanbul-lib-instrument";
 
-function InstrumenterFactory(options = {}) {
+export function instrumentCodeSync(name, code) {
 	const instrumenter = createInstrumenter({
-		autoWrap: true,
 		coverageVariable: "__coverage__",
-		embedSource: true,
-		compact: options.compact,
-		preserveComments: options.preserveComments,
-		produceSourceMap: options.produceSourceMap,
-		ignoreClassMethods: options.ignoreClassMethods,
-		esModules: options.esModules,
-		parserPlugins: options.parserPlugins,
+		esModules: true,
 	});
-
-	return {
-		instrumentSync(code, filename) {
-			var instrumented = instrumenter.instrumentSync(code, filename);
-			return instrumented;
-		},
-		lastFileCoverage() {
-			return instrumenter.lastFileCoverage();
-		},
-	};
+	const instrumented = instrumenter.instrumentSync(code, basename(name));
+	return instrumented;
 }
 
-export default InstrumenterFactory;
+export default instrumentCodeSync;
