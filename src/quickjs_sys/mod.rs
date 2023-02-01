@@ -878,7 +878,7 @@ impl AsObject for JsArray {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct JsArrayBuffer(JsRef);
+pub struct JsArrayBuffer(pub JsRef);
 
 impl JsArrayBuffer {
     pub fn to_vec(&self) -> Vec<u8> {

@@ -803,7 +803,8 @@ fn fwrite(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue {
 fn fwrite_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue {
     if let Some(JsValue::Int(fd)) = arg.get(0) {
         if let Some(JsValue::Int(position)) = arg.get(1) {
-            if let Some(JsValue::ArrayBuffer(buf)) = arg.get(2) {
+            if let Some(JsValue::Object(obj)) = arg.get(2) {
+                let buf = JsArrayBuffer(obj.js_ref().to_owned());
                 if *position >= 0 {
                     let res = unsafe {
                         wasi_fs::fd_seek(*fd as u32, *position as i64, wasi_fs::WHENCE_SET)
