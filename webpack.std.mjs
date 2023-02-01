@@ -3,11 +3,11 @@ import path from "path";
 import webpack from "webpack";
 
 const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon", "rc", "nyc"];
-
-const createConfig = (name) => {
+const createConfig = (name) => (_, { mode = "production" }) => {
+	const _mode = mode.toLowerCase().startsWith("p") ? "production" : "development";
 	/** @type {webpack.Configuration} */
 	const config = {
-		mode: "production",
+		mode: _mode,
 		entry: `./src/modules_js/${name}.js.in`,
 		devtool: false,
 		target: name === "crypto" ? "web" : "node",
@@ -52,7 +52,7 @@ const createConfig = (name) => {
 		},
 		optimization: {
 			nodeEnv: false,
-			minimize: true,
+			minimize: _mode === "production",
 			minimizer: [
 				new TerserPlugin({
 					extractComments: false,
@@ -107,7 +107,10 @@ const createConfig = (name) => {
 					},
 				},
 				{
-					test: [/@babel\/core\/lib\/config\/files\/configuration\.js/, /@babel\/core\/lib\/config\/files\/plugins\.js/],
+					test: [
+						/@babel\/core\/lib\/config\/files\/configuration\.js/,
+						/@babel\/core\/lib\/config\/files\/plugins\.js/,
+					],
 					loader: "string-replace-loader",
 					options: {
 						multiple: [
@@ -120,7 +123,7 @@ const createConfig = (name) => {
 					},
 				},
 				{
-					test: [/@babel\/core\/lib\/config\/files\/module-types\.js/],
+					test: /@babel\/core\/lib\/config\/files\/module-types\.js/,
 					loader: "string-replace-loader",
 					options: {
 						multiple: [
