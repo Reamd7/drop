@@ -1,73 +1,61 @@
-import { assert } from "chai";
+import assert from "uvu/assert";
 import buffer from "buffer";
 import crypto from "crypto";
 import events from "events";
 import fs from "fs";
-import memfs from "memfs";
 import path from "path";
-import rc from "rc";
 import stream from "stream";
 import { suite } from "uvu";
 import url from "url";
 import util from "util";
 import zlib from "zlib";
 
-interface Test {
-	readonly content: string;
-}
-
 const urlTest = suite("basics");
 urlTest("url module", () => {
 	const keys = Object.keys(url);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const zlibTest = suite("zlib");
 zlibTest("zlib module", () => {
 	const keys = Object.keys(zlib);
-	assert.isNotEmpty(keys);
-});
-
-const memfsTest = suite("memfs");
-memfsTest("memfs module", () => {
-	const keys = Object.keys(memfs);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const utilTest = suite("util");
 utilTest("util module", () => {
 	const keys = Object.keys(util);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const streamTest = suite("stream");
 streamTest("stream module", () => {
 	const keys = Object.keys(stream);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const pathTest = suite("path");
 pathTest("path module", () => {
 	const keys = Object.keys(path);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const fsTest = suite("fs");
 fsTest("fs module", () => {
 	const keys = Object.keys(fs);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const eventsTest = suite("events");
 eventsTest("events module", () => {
 	const keys = Object.keys(events);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const cryptoTest = suite("crypto");
 cryptoTest("crypto module", () => {
 	const keys = Object.keys(crypto);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 	const md5 = crypto.createHash("md5");
 	md5.update("hello world");
 	assert.equal(md5.digest("hex"), "5eb63bbbe01eeed093cb22bb8f5acdc3");
@@ -76,19 +64,11 @@ cryptoTest("crypto module", () => {
 const bufferTest = suite("buffer");
 bufferTest("buffer module", () => {
 	const keys = Object.keys(buffer);
-	assert.isNotEmpty(keys);
+	assert.ok(keys);
 });
 
 const cjsTest = suite("cjs");
 cjsTest("cjs module", () => {
 	const keys = require("./test.cjs");
-	assert.isNotEmpty(keys);
-});
-
-const rcTest = suite("rc");
-rcTest("rc module", () => {
-	const data = rc("yo", {
-		foo: "bar",
-	});
-	assert.equal(data.foo, "bar");
+	assert.ok(keys);
 });

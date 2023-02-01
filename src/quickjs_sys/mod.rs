@@ -315,6 +315,8 @@ impl Context {
         JS_AddIntrinsicBigFloat(ctx);
         JS_AddIntrinsicBigDecimal(ctx);
         JS_AddIntrinsicOperators(ctx);
+        JS_AddIntrinsicEval(ctx);
+        JS_AddIntrinsicDate(ctx);
         JS_EnableBignumExt(ctx, 1);
         js_std_add_console(ctx);
         js_init_module_std(ctx, "std\0".as_ptr() as *const i8);

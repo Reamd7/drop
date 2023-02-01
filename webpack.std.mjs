@@ -2,21 +2,21 @@ import TerserPlugin from "terser-webpack-plugin";
 import path from "path";
 import webpack from "webpack";
 
-const ALL_PACKAGES = ["crypto", "memfs", "zlib", "chai", "uvu", "sinon", "rc", "nyc"];
-const createConfig = (name) => (_, { mode = "production" }) => {
+const ALL_PACKAGES = ["crypto", "zlib", "uvu", "uvu/assert"];
+const createConfig = (mod) => (_, { mode = "production" }) => {
 	const _mode = mode.toLowerCase().startsWith("p") ? "production" : "development";
 	/** @type {webpack.Configuration} */
 	const config = {
 		mode: _mode,
-		entry: `./src/modules_js/${name}.js.in`,
+		entry: `./src/modules_js/${mod}.js.in`,
 		devtool: false,
-		target: name === "crypto" ? "web" : "node",
+		target: mod === "crypto" ? "web" : "node",
 		experiments: {
 			outputModule: true,
 		},
 		output: {
 			path: path.resolve("src/modules_js"),
-			filename: `${name}.js`,
+			filename: `${mod}.js`,
 			chunkFormat: "module",
 			library: {
 				type: "module",
@@ -44,7 +44,7 @@ const createConfig = (name) => (_, { mode = "production" }) => {
 				"url",
 				"util",
 			]
-				.concat(ALL_PACKAGES.filter((p) => p !== name))
+				.concat(ALL_PACKAGES.filter((p) => p !== mod))
 				.reduce((acc, curr) => ((acc[curr] = curr), acc), {}),
 		},
 		performance: {
