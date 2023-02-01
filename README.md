@@ -38,6 +38,8 @@ API Documentation: [`docs`](docs/README.md#table-of-contents)
 
 ## Features
 
+_Drop is currently capable enough that it can run IstanbulJS and Babel._
+
 Drop's JS runtime uses QuickJS and supports both CommonJS and ES Modules with a
 proper global `require` function and a `module` object, just like NodeJS.
 
@@ -48,8 +50,7 @@ Drop currently offers the embedded features in WebAssembly:
 - Following NodeJS modules:
   - `assert` • `buffer`: • `crypto`: • `events`: • `fs` • `memfs` • `os` • `url`
   • `path` • `process` • `punycode` • `querystring` • `readline` • `stream`
-  • `stringdecoder` • `timers` • `tty` • `util` • `zlib` • `uvu` • `chai` • `rc`
-  • `sinon`
+  • `stringdecoder` • `timers` • `tty` • `util` • `zlib` • `uvu` (test harness)
 - Following tools through `busybox`:
   - `base64` • `basename` • `cat` • `chmod` • `chown` • `clear` • `cp` • `date`
   • `diff` • `echo` • `egrep` • `env` • `false` • `fgrep` • `find` • `grep`
