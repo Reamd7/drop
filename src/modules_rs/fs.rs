@@ -678,7 +678,9 @@ fn open_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
                 let fdflag = if flag & 128 == 128 {
                     wasi_fs::FDFLAGS_NONBLOCK
                 } else {
-                    wasi_fs::FDFLAGS_SYNC
+                    // passing this here seems unnecessary and actually crashes wasmtime?
+                    // wasi_fs::FDFLAGS_SYNC
+                    0
                 } | if flag & 8 == 8 {
                     wasi_fs::FDFLAGS_APPEND
                 } else {

@@ -3,4 +3,4 @@ target="wasm32-wasi"
 rustflags="-C target-feature=+bulk-memory"
 
 [target.wasm32-wasi]
-runner="wasmtime run --dir=. --wasm-features=bulk-memory"
+runner="wasmtime run --mapdir .::. --wasm-features=bulk-memory"
