@@ -9,7 +9,8 @@
     "module": "ESNext",
     "target": "ESNext",
     "allowJs": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "sourceMap": false
   },
   "include": ["src/npm/index.ts"]
 }

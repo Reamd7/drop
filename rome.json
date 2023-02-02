@@ -22,7 +22,8 @@
         "noArguments": "off"
       },
       "suspicious": {
-        "noShadowRestrictedNames": "off"
+        "noShadowRestrictedNames": "off",
+        "noExplicitAny": "off"
       },
       "complexity": {
         "useSimplifiedLogicExpression": "off"

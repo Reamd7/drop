@@ -18,7 +18,7 @@ fn main() {
     println!("cargo:rustc-link-search=native=build");
     println!("cargo:rustc-link-lib=quickjs");
 
-    // execute webpack to build *.js.in files
+    // execute webpack to build src/modules_js/**/*.ts files
     Command::new("npx")
         .arg("webpack")
         .arg("--config")

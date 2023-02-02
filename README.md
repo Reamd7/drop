@@ -42,10 +42,10 @@ To run the formatter and apply the style: `npm run format -- --write`.
 To run the linter and apply the rules: `npm run lint -- --apply`.  
 To run the tests: `npm test`.  
 To build you need:
-- Rust (on `PATH`)
-- EMCC (on `PATH` currently)
-- CMake and C++ toolchain (on `PATH`)
-- Wasmtime (if you want to work on the WASI code)
+- [Rust](https://rustup.rs/) (on `PATH`)
+- [EMCC](https://emscripten.org/) (on `PATH` currently)
+- [CMake](https://cmake.org/) and C++ toolchain (on `PATH`)
+- [Wasmtime]https://wasmtime.dev/ (if you want to work on the WASI code)
 And then run `npm run build`.
 
 Take a look at the [Workflow file](.github/workflows/main.yml), it's the most up

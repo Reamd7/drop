@@ -22,12 +22,17 @@
   },
   "keywords": [
     "wasm",
+    "wasi",
     "javascript",
+    "typescript",
+    "tsx",
     "runtime",
-    "file",
-    "io",
     "offline",
-    "scripting"
+    "scripting",
+    "emulation",
+    "webassembly",
+    "quickjs",
+    "emscripten"
   ],
   "author": "Sepehr Laal",
   "license": "MIT",

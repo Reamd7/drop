@@ -8,7 +8,7 @@ const createConfig = (mod) => (_, { mode = "production" }) => {
 	/** @type {webpack.Configuration} */
 	const config = {
 		mode: _mode,
-		entry: `./src/modules_js/${mod}.js.in`,
+		entry: `./src/modules_js/${mod}.ts`,
 		devtool: false,
 		target: mod === "crypto" ? "web" : "node",
 		experiments: {
@@ -83,7 +83,7 @@ const createConfig = (mod) => (_, { mode = "production" }) => {
 			}),
 		],
 		resolve: {
-			extensions: [".js", ".js.in"],
+			extensions: [".js", ".ts"],
 			fallback: {
 				"safer-buffer": "buffer",
 				"safe-buffer": "buffer",
@@ -93,6 +93,11 @@ const createConfig = (mod) => (_, { mode = "production" }) => {
 		},
 		module: {
 			rules: [
+				{
+					test: /\.(ts|tsx)$/i,
+					loader: "ts-loader",
+					exclude: ["/node_modules/"],
+				},
 				{
 					test: /browserslist\/node/,
 					loader: "string-replace-loader",
