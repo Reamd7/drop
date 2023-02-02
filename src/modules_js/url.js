@@ -8,10 +8,10 @@ var h = {};
 var e = p$1;
 var a = {
 	isString: function (t) {
-		return "string" == typeof t;
+		return "string" === typeof t;
 	},
 	isObject: function (t) {
-		return "object" == typeof t && null !== t;
+		return "object" === typeof t && null !== t;
 	},
 	isNull: function (t) {
 		return null === t;
@@ -269,8 +269,8 @@ r.prototype.resolveObject = function (t) {
 		d = t.host || (t.pathname && "/" === t.pathname.charAt(0)),
 		j = d || O || (h.host && t.pathname),
 		q = j,
-		x = (h.pathname && h.pathname.split("/")) || [],
-		A = ((m = (t.pathname && t.pathname.split("/")) || []), h.protocol && !y[h.protocol]);
+		x = h.pathname?.split("/") || [],
+		A = ((m = t.pathname?.split("/") || []), h.protocol && !y[h.protocol]);
 	if (
 		(A &&
 			((h.hostname = ""),

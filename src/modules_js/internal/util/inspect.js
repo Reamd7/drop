@@ -1257,7 +1257,7 @@ function formatError(err, constructor, tag, ctx, keys) {
 		let fallback = "Error";
 		if (constructor === null) {
 			const start = stack.match(/^([A-Z][a-z_ A-Z0-9[\]()-]+)(?::|\n {4}at)/) || stack.match(/^([a-z_A-Z0-9-]*Error)$/);
-			fallback = (start && start[1]) || "";
+			fallback = start?.[1] || "";
 			len = fallback.length;
 			fallback = fallback || "Error";
 		}

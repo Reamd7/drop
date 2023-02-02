@@ -64,7 +64,7 @@ function innerDeepEqual(val1, val2, strict, memos = memo) {
 		// Non strict case where values are either null or NaN
 		if (val1 === null || typeof val1 !== "object") {
 			if (val2 === null || typeof val2 !== "object") {
-				return val1 == val2 || (Number.isNaN(val1) && Number.isNaN(val2));
+				return val1 === val2 || (Number.isNaN(val1) && Number.isNaN(val2));
 			}
 			return false;
 		}

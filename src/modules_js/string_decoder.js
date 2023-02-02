@@ -23,7 +23,7 @@ import { Buffer } from "buffer";
 var isBufferEncoding =
 	Buffer.isEncoding ||
 	function (encoding) {
-		switch (encoding && encoding.toLowerCase()) {
+		switch (encoding?.toLowerCase()) {
 			case "hex":
 			case "utf8":
 			case "utf-8":
@@ -180,19 +180,19 @@ StringDecoder.prototype.detectIncompleteChar = function (buffer) {
 		// See http://en.wikipedia.org/wiki/UTF-8#Description
 
 		// 110XXXXX
-		if (i == 1 && c >> 5 == 0x06) {
+		if (i === 1 && c >> 5 === 0x06) {
 			this.charLength = 2;
 			break;
 		}
 
 		// 1110XXXX
-		if (i <= 2 && c >> 4 == 0x0e) {
+		if (i <= 2 && c >> 4 === 0x0e) {
 			this.charLength = 3;
 			break;
 		}
 
 		// 11110XXX
-		if (i <= 3 && c >> 3 == 0x1e) {
+		if (i <= 3 && c >> 3 === 0x1e) {
 			this.charLength = 4;
 			break;
 		}
@@ -202,7 +202,7 @@ StringDecoder.prototype.detectIncompleteChar = function (buffer) {
 
 StringDecoder.prototype.end = function (buffer) {
 	var res = "";
-	if (buffer && buffer.length) res = this.write(buffer);
+	if (buffer?.length) res = this.write(buffer);
 
 	if (this.charReceived) {
 		var cr = this.charReceived;

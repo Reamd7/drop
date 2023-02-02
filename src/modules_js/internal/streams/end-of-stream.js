@@ -74,14 +74,13 @@ export function eos(stream, options, callback) {
 	// this generic check.
 	let willEmitClose =
 		isServerResponse(stream) ||
-		(state &&
-			state.autoDestroy &&
+		(state?.autoDestroy &&
 			state.emitClose &&
 			state.closed === false &&
 			isReadable(stream) === readable &&
 			isWritable(stream) === writable);
 
-	let writableFinished = stream.writableFinished || (wState && wState.finished);
+	let writableFinished = stream.writableFinished || wState?.finished;
 	const onfinish = () => {
 		writableFinished = true;
 		// Stream should not be destroyed here. If it is that
@@ -93,7 +92,7 @@ export function eos(stream, options, callback) {
 		if (!readable || readableEnded) callback.call(stream);
 	};
 
-	let readableEnded = stream.readableEnded || (rState && rState.endEmitted);
+	let readableEnded = stream.readableEnded || rState?.endEmitted;
 	const onend = () => {
 		readableEnded = true;
 		// Stream should not be destroyed here. If it is that
@@ -153,15 +152,15 @@ export function eos(stream, options, callback) {
 	// _closed is for OutgoingMessage which is not a proper Writable.
 	const closed =
 		(!wState && !rState && stream._closed === true) ||
-		(wState && wState.closed) ||
-		(rState && rState.closed) ||
-		(wState && wState.errorEmitted) ||
-		(rState && rState.errorEmitted) ||
+		wState?.closed ||
+		rState?.closed ||
+		wState?.errorEmitted ||
+		rState?.errorEmitted ||
 		(rState && stream.req && stream.aborted) ||
 		((!wState || !willEmitClose || typeof wState.closed !== "boolean") &&
 			(!rState || !willEmitClose || typeof rState.closed !== "boolean") &&
-			(!writable || (wState && wState.finished)) &&
-			(!readable || (rState && rState.endEmitted)));
+			(!writable || wState?.finished) &&
+			(!readable || rState?.endEmitted));
 
 	if (closed) {
 		// TODO(ronag): Re-throw error if errorEmitted?

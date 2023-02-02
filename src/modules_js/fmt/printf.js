@@ -216,7 +216,7 @@ class Printf {
 								this.state = State.PERCENT;
 								return;
 							}
-							flags.width = flags.width == -1 ? 0 : flags.width;
+							flags.width = flags.width === -1 ? 0 : flags.width;
 							flags.width *= 10;
 							flags.width += val;
 						}
@@ -281,7 +281,7 @@ class Printf {
 	handleLessThan() {
 		// deno-lint-ignore no-explicit-any
 		const arg = this.args[this.argNum];
-		if ((arg || {}).constructor.name !== "Array") {
+		if (arg?.constructor.name !== "Array") {
 			throw new Error(`arg ${arg} is not an array. Todo better error handling`);
 		}
 		let str = "[ ";
@@ -544,7 +544,7 @@ class Printf {
 				esign = r < 0 ? "-" : "+";
 			}
 		}
-		e = e.length == 1 ? "0" + e : e;
+		e = e.length === 1 ? "0" + e : e;
 		const val = `${mantissa}.${fractional}${upcase ? "E" : "e"}${esign}${e}`;
 		return this.padNum(val, n < 0);
 	}

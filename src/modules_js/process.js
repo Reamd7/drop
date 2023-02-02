@@ -156,7 +156,7 @@ var _performance = {
 if (_performance.now === undefined) {
 	var nowOffset = Date.now();
 
-	if (_performance.timing && _performance.timing.navigationStart) {
+	if (_performance.timing?.navigationStart) {
 		nowOffset = _performance.timing.navigationStart;
 	}
 	_performance.now = function () {

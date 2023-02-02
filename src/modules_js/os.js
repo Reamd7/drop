@@ -93,7 +93,7 @@ function uptime() {
 }
 
 function userInfo(options) {
-	const encoding = (options && options.encoding) || "utf8";
+	const encoding = options?.encoding || "utf8";
 	let username = "wasm";
 	let _homedir = homedir();
 	if (encoding === "Buffer" || encoding === "buffer") {

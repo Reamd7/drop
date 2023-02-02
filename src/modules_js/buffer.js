@@ -379,7 +379,7 @@ function dew() {
 			throw new TypeError('The "value" argument must not be of type number. Received type number');
 		}
 
-		var valueOf = value.valueOf && value.valueOf();
+		var valueOf = value.valueOf?.();
 
 		if (valueOf != null && valueOf !== value) {
 			return Buffer.from(valueOf, encodingOrOffset, length);
@@ -578,7 +578,7 @@ function dew() {
 	}
 
 	function SlowBuffer(length) {
-		if (+length != length) {
+		if (+length !== length) {
 			// eslint-disable-line eqeqeq
 			length = 0;
 		}
@@ -2261,7 +2261,7 @@ function dew() {
 			}
 
 			if (Base) NodeError.__proto__ = Base;
-			NodeError.prototype = Object.create(Base && Base.prototype);
+			NodeError.prototype = Object.create(Base?.prototype);
 			NodeError.prototype.constructor = NodeError;
 
 			var prototypeAccessors = { code: { configurable: true } };
@@ -2553,10 +2553,7 @@ function dew() {
 	// See: https://github.com/feross/buffer/issues/166
 
 	function isInstance(obj, type) {
-		return (
-			obj instanceof type ||
-			(obj != null && obj.constructor != null && obj.constructor.name != null && obj.constructor.name === type.name)
-		);
+		return obj instanceof type || (obj?.constructor?.name != null && obj.constructor.name === type.name);
 	}
 
 	function numberIsNaN(obj) {

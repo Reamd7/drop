@@ -187,8 +187,8 @@ function dew$1() {
 			};
 		} // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
 
-		var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-		attachTo = attachTo && attachTo.setTimeout ? attachTo : global; // Don't get fooled by e.g. browserify environments.
+		var attachTo = Object.getPrototypeOf?.(global);
+		attachTo = attachTo?.setTimeout ? attachTo : global; // Don't get fooled by e.g. browserify environments.
 
 		if ({}.toString.call(global.process) === "[object process]") {
 			// For Node.js before 0.9
@@ -282,11 +282,11 @@ function dew() {
 	exports$1.setImmediate =
 		(typeof self !== "undefined" && self.setImmediate) ||
 		(typeof _global !== "undefined" && _global.setImmediate) ||
-		(exports$1 && exports$1.setImmediate);
+		exports$1?.setImmediate;
 	exports$1.clearImmediate =
 		(typeof self !== "undefined" && self.clearImmediate) ||
 		(typeof _global !== "undefined" && _global.clearImmediate) ||
-		(exports$1 && exports$1.clearImmediate);
+		exports$1?.clearImmediate;
 	return exports$1;
 }
 

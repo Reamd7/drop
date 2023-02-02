@@ -186,9 +186,7 @@ function willEmitClose(stream) {
 	const rState = stream._readableState;
 	const state = wState || rState;
 
-	return (
-		(!state && isServerResponse(stream)) || !!(state && state.autoDestroy && state.emitClose && state.closed === false)
-	);
+	return (!state && isServerResponse(stream)) || !!(state?.autoDestroy && state.emitClose && state.closed === false);
 }
 
 export default {

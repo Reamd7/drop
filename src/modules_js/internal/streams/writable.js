@@ -63,10 +63,10 @@ function WritableState(options, stream, isDuplex) {
 
 	// Object stream flag to indicate whether or not this stream
 	// contains buffers or objects.
-	this.objectMode = !!(options && options.objectMode);
+	this.objectMode = !!options?.objectMode;
 
 	if (isDuplex) {
-		this.objectMode = this.objectMode || !!(options && options.writableObjectMode);
+		this.objectMode = this.objectMode || !!options?.writableObjectMode;
 	}
 
 	// The point at which write() starts returning false
@@ -100,7 +100,7 @@ function WritableState(options, stream, isDuplex) {
 	// Crypto is kind of old and crusty.  Historically, its default string
 	// encoding is 'binary' so we have to make this configurable.
 	// Everything else in the universe uses 'utf8', though.
-	this.defaultEncoding = (options && options.defaultEncoding) || "utf8";
+	this.defaultEncoding = options?.defaultEncoding || "utf8";
 
 	// Not an actual buffer we keep track of, but a measurement
 	// of how much we're waiting to get pushed to some underlying
@@ -802,7 +802,7 @@ Object.defineProperties(Writable.prototype, {
 
 	writableBuffer: {
 		get() {
-			return this._writableState && this._writableState.getBuffer();
+			return this._writableState?.getBuffer();
 		},
 	},
 
@@ -822,7 +822,7 @@ Object.defineProperties(Writable.prototype, {
 
 	writableHighWaterMark: {
 		get() {
-			return this._writableState && this._writableState.highWaterMark;
+			return this._writableState?.highWaterMark;
 		},
 	},
 
@@ -834,7 +834,7 @@ Object.defineProperties(Writable.prototype, {
 
 	writableLength: {
 		get() {
-			return this._writableState && this._writableState.length;
+			return this._writableState?.length;
 		},
 	},
 });

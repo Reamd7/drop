@@ -107,7 +107,6 @@ export async function runBusy(opts: BusyBoxRunOptions): Promise<Runner> {
 	const oldProcArgv = process.argv;
 	process.argv = ["drop", cmd === "zip" ? "nanozip" : cmd];
 	const variant = opts.variant || getDefaultABIVariant();
-	// rome-ignore lint/style/useTemplate: <explanation>
 	const factory = require("../../out/" + variant + "/busybox.js");
 	const instance = await factory(opts.Module);
 	return {

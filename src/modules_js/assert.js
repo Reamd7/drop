@@ -419,7 +419,7 @@ assert.equal = function equal(actual, expected, message) {
 		throw new ERR_MISSING_ARGS("actual", "expected");
 	}
 	// eslint-disable-next-line eqeqeq
-	if (actual != expected && (!Number.isNaN(actual) || !Number.isNaN(expected))) {
+	if (actual !== expected && (!Number.isNaN(actual) || !Number.isNaN(expected))) {
 		innerFail({
 			actual,
 			expected,
@@ -443,7 +443,7 @@ assert.notEqual = function notEqual(actual, expected, message) {
 		throw new ERR_MISSING_ARGS("actual", "expected");
 	}
 	// eslint-disable-next-line eqeqeq
-	if (actual == expected || (Number.isNaN(actual) && Number.isNaN(expected))) {
+	if (actual === expected || (Number.isNaN(actual) && Number.isNaN(expected))) {
 		innerFail({
 			actual,
 			expected,
@@ -695,7 +695,7 @@ function expectedException(actual, expected, message, fn) {
 			generatedMessage = true;
 			message = "The error is expected to be an instance of " + `"${expected.name}". Received `;
 			if (isError(actual)) {
-				const name = (actual.constructor && actual.constructor.name) || actual.name;
+				const name = actual.constructor?.name || actual.name;
 				if (expected.name === name) {
 					message += "an error with identical name but a different prototype.";
 				} else {
@@ -805,7 +805,7 @@ function expectsError(stackStartFn, actual, error, message) {
 
 	if (actual === NO_EXCEPTION_SENTINEL) {
 		let details = "";
-		if (error && error.name) {
+		if (error?.name) {
 			details += ` (${error.name})`;
 		}
 		details += message ? `: ${message}` : ".";
@@ -857,7 +857,7 @@ function expectsNoError(stackStartFn, actual, error, message) {
 			actual,
 			expected: error,
 			operator: stackStartFn.name,
-			message: `Got unwanted ${fnType}${details}\n` + `Actual message: "${actual && actual.message}"`,
+			message: `Got unwanted ${fnType}${details}\n` + `Actual message: "${actual?.message}"`,
 			stackStartFn,
 		});
 	}

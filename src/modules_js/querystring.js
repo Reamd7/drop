@@ -4,13 +4,13 @@ function e(e, n) {
 var n = function (n, r, t, o) {
 		(r = r || "&"), (t = t || "=");
 		var a = {};
-		if ("string" != typeof n || 0 === n.length) {
+		if ("string" !== typeof n || 0 === n.length) {
 			return a;
 		}
 		var u = /\+/g;
 		n = n.split(r);
 		var c = 1e3;
-		o && "number" == typeof o.maxKeys && (c = o.maxKeys);
+		o && "number" === typeof o.maxKeys && (c = o.maxKeys);
 		var i = n.length;
 		c > 0 && i > c && (i = c);
 		for (var s = 0; s < i; ++s) {
@@ -44,7 +44,7 @@ var n = function (n, r, t, o) {
 			(n = n || "&"),
 			(t = t || "="),
 			null === e && (e = void 0),
-			"object" == typeof e
+			"object" === typeof e
 				? Object.keys(e)
 						.map(function (o) {
 							var a = encodeURIComponent(r(o)) + t;

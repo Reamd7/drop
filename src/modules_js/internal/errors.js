@@ -131,7 +131,7 @@ function invalidArgTypeHelper(input) {
 		return ` Received function ${input.name}`;
 	}
 	if (typeof input === "object") {
-		if (input.constructor && input.constructor.name) {
+		if (input.constructor?.name) {
 			return ` Received an instance of ${input.constructor.name}`;
 		}
 		return ` Received ${inspect(input, { depth: -1 })}`;
@@ -411,7 +411,7 @@ export class ERR_UNKNOWN_ENCODING extends TypeError {
 }
 
 function buildReturnPropertyType(value) {
-	if (value && value.constructor && value.constructor.name) {
+	if (value?.constructor?.name) {
 		return `instance of ${value.constructor.name}`;
 	} else {
 		return `type ${typeof value}`;

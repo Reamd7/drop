@@ -628,7 +628,7 @@ export const stringToSymlinkType = hideStackFrames((type) => {
 // converts Date or number to a fractional UNIX timestamp
 export function toUnixTimestamp(time, name = "time") {
 	// eslint-disable-next-line eqeqeq
-	if (typeof time === "string" && +time == time) {
+	if (typeof time === "string" && +time === time) {
 		return +time;
 	}
 	if (Number.isFinite(time)) {

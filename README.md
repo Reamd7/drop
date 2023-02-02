@@ -28,13 +28,28 @@ std                modules            README.md
 $ drop zip archive.zip file.txt
 ```
 
-API Documentation: [`docs`](docs/README.md#table-of-contents)
-
 ## Goals
 
 - *Isomorphism*: Supporting runtime execution everywhere under a single API.
 - *Portability*: Staying entirely in WebAssembly and WASI for max portability.
 - *Familiarity*: Not introducing any new concepts. Faithfulness to NodeJS APIs.
+
+## Development
+
+API Documentation: [`docs`](docs/README.md#table-of-contents)
+
+To run the formatter and apply the style: `npm run format -- --write`.  
+To run the linter and apply the rules: `npm run lint -- --apply`.  
+To run the tests: `npm test`.  
+To build you need:
+- Rust (on `PATH`)
+- EMCC (on `PATH` currently)
+- CMake and C++ toolchain (on `PATH`)
+- Wasmtime (if you want to work on the WASI code)
+And then run `npm run build`.
+
+Take a look at the [Workflow file](.github/workflows/main.yml), it's the most up
+to date way to build the project and it's pretty minimal/easy to follow locally.
 
 ## Features
 

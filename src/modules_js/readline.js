@@ -141,7 +141,7 @@ Interface.prototype.question[promisify.custom] = function question(query, option
 		options = kEmptyObject;
 	}
 
-	if (options.signal && options.signal.aborted) {
+	if (options.signal?.aborted) {
 		return Promise.reject(new AbortError(undefined, { cause: options.signal.reason }));
 	}
 

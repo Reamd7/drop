@@ -5,16 +5,30 @@
     "lineWidth": 120
   },
   "files": {
-    "maxSize": 20971520
+    "maxSize": 20971520,
+    "ignore": [
+      "src/modules_js/crypto.js",
+      "src/modules_js/uvu/assert.js",
+      "src/modules_js/uvu.js",
+      "src/modules_js/zlib.js"
+    ]
   },
   "linter": {
     "rules": {
       "style": {
         "useTemplate": "off",
-        "noUnusedTemplateLiteral": "off"
+        "noUnusedTemplateLiteral": "off",
+        "useSingleVarDeclarator": "off",
+        "noArguments": "off"
       },
       "suspicious": {
         "noShadowRestrictedNames": "off"
+      },
+      "complexity": {
+        "useSimplifiedLogicExpression": "off"
+      },
+      "performance": {
+        "noDelete": "off"
       }
     }
   }

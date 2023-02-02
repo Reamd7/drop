@@ -101,7 +101,7 @@ export class TextDecoder {
 	}
 
 	decode(input) {
-		if (typeof input != "undefined") {
+		if (typeof input !== "undefined") {
 			let ret;
 			if (input.buffer instanceof ArrayBuffer) {
 				ret = text_decode(input.buffer, this.encoding, this.fatal);

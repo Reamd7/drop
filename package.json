@@ -11,7 +11,8 @@
   },
   "scripts": {
     "prepublishOnly": "npm run build",
-    "format": "rome format --write src *.*js",
+    "format": "rome format src *.*js",
+    "lint": "rome check src *.*js",
     "build": "zx build.zx.mjs",
     "test": "zx test.zx.mjs"
   },

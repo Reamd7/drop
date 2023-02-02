@@ -124,10 +124,10 @@ export function createWriteStream(path, opts) {
 export class ReadStream extends Readable {
 	constructor(path, opts) {
 		path = path instanceof URL ? fromFileUrl(path) : path;
-		if (opts && opts.start) {
+		if (opts?.start) {
 			validateInteger(opts.start, "start");
 		}
-		if (opts && opts.end) {
+		if (opts?.end) {
 			validateInteger(opts.end, "end");
 		}
 		const hasBadOptions = opts && (opts.start || opts.end || opts.fs);

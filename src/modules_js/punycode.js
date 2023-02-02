@@ -107,7 +107,7 @@ function ucs2decode(string) {
 		if (value >= 0xd800 && value <= 0xdbff && counter < length) {
 			// It's a high surrogate, and there is a next character.
 			const extra = string.charCodeAt(counter++);
-			if ((extra & 0xfc00) == 0xdc00) {
+			if ((extra & 0xfc00) === 0xdc00) {
 				// Low surrogate.
 				output.push(((value & 0x3ff) << 10) + (extra & 0x3ff) + 0x10000);
 			} else {
@@ -169,7 +169,7 @@ const basicToDigit = function (codePoint) {
 const digitToBasic = function (digit, flag) {
 	//  0..25 map to ASCII a..z or A..Z
 	// 26..35 map to ASCII 0..9
-	return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+	return digit + 22 + 75 * (digit < 26) - ((flag !== 0) << 5);
 };
 
 /**
@@ -256,7 +256,7 @@ const decode = function (input) {
 		}
 
 		const out = output.length + 1;
-		bias = adapt(i - oldi, out, oldi == 0);
+		bias = adapt(i - oldi, out, oldi === 0);
 
 		// `i` was supposed to wrap around from `out` to `0`,
 		// incrementing `n` each time, so we'll fix that now:
@@ -338,7 +338,7 @@ const encode = function (input) {
 			if (currentValue < n && ++delta > maxInt) {
 				error("overflow");
 			}
-			if (currentValue == n) {
+			if (currentValue === n) {
 				// Represent delta as a generalized variable-length integer.
 				let q = delta;
 				for (let k = base; ; /* no condition */ k += base) {
@@ -353,7 +353,7 @@ const encode = function (input) {
 				}
 
 				output.push(stringFromCharCode(digitToBasic(q, 0)));
-				bias = adapt(delta, handledCPCountPlusOne, handledCPCount == basicLength);
+				bias = adapt(delta, handledCPCountPlusOne, handledCPCount === basicLength);
 				delta = 0;
 				++handledCPCount;
 			}

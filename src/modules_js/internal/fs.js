@@ -800,39 +800,10 @@ function utimesSync(path, atime, mtime) {
 function lutimes(path, atime, mtime, callback) {
 	callback(wasiFsSyscallErrorMap("ENOSYS", "lutime", path));
 	return;
-
-	path = getValidatedPath(path);
-
-	validateFunction(callback, "callback");
-	setTimeout(() => {
-		try {
-			lutimesSync(path, atime, mtime);
-			callback(null);
-		} catch (err) {
-			print(err, err.stack);
-			callback(err);
-		}
-	}, 0);
 }
 
 function lutimesSync(path, atime, mtime) {
 	throw wasiFsSyscallErrorMap("ENOSYS", "lutime", path);
-
-	path = getValidatedPath(path);
-	atime = getValidTime(atime);
-	if (atime instanceof Date) {
-		atime = atime.getTime();
-	}
-	mtime = getValidTime(mtime);
-	if (mtime instanceof Date) {
-		mtime = mtime.getTime();
-	}
-
-	try {
-		binding.lutimeSync(path, atime, mtime);
-	} catch (err) {
-		throw wasiFsSyscallErrorMap(err, "utime", path);
-	}
 }
 
 function futimes(fd, atime, mtime, callback) {
@@ -1461,12 +1432,12 @@ function read(fd, buffer, offset, length, position, callback) {
 	} else if (arguments.length === 4) {
 		callback = length;
 		let option = offset;
-		offset = (option && option.offset) ?? 0;
-		length = (option && option.length) ?? buffer.byteLength - offset;
-		if ((option && option.position) === null) {
+		offset = option?.offset ?? 0;
+		length = option?.length ?? buffer.byteLength - offset;
+		if (option?.position === null) {
 			position = -1;
 		}
-		position = position ?? (option && option.position) ?? -1;
+		position = position ?? option?.position ?? -1;
 	} else if (typeof offset === "function") {
 		callback = offset;
 		offset = 0;
@@ -1942,7 +1913,7 @@ function write(fd, buffer, offset, length, position, callback) {
 		} else {
 			callback = position;
 			position = offset;
-			if (length === "hex" && buffer.length % 2 == 1) {
+			if (length === "hex" && buffer.length % 2 === 1) {
 				throw new errors.ERR_INVALID_ARG_VALUE_RANGE(
 					"encoding",
 					length,
@@ -1957,10 +1928,10 @@ function write(fd, buffer, offset, length, position, callback) {
 	} else if (typeof offset === "object") {
 		callback = length;
 		let option = offset;
-		offset = (option && option.offset) ?? 0;
+		offset = option?.offset ?? 0;
 		validateInteger(offset, "offset", 0, buffer.byteLength);
-		length = (option && option.length) ?? buffer.byteLength - offset;
-		position = (option && option.position) ?? -1;
+		length = option?.length ?? buffer.byteLength - offset;
+		position = option?.position ?? -1;
 	} else if (typeof offset === "function") {
 		callback = offset;
 		offset = 0;
@@ -2018,7 +1989,7 @@ function writeSync(fd, buffer, offset, length, position) {
 	if (typeof buffer === "string") {
 		oriStr = buffer;
 		let encoding = length ?? "utf8";
-		if (encoding === "hex" && buffer.length % 2 == 1) {
+		if (encoding === "hex" && buffer.length % 2 === 1) {
 			throw new errors.ERR_INVALID_ARG_VALUE_RANGE(
 				"encoding",
 				encoding,
@@ -2031,9 +2002,9 @@ function writeSync(fd, buffer, offset, length, position) {
 		length = buffer.byteLength - offset;
 	} else if (typeof offset === "object") {
 		let option = offset;
-		offset = (option && option.offset) ?? 0;
-		length = (option && option.length) ?? buffer.byteLength - offset;
-		position = (option && option.position) ?? -1;
+		offset = option?.offset ?? 0;
+		length = option?.length ?? buffer.byteLength - offset;
+		position = option?.position ?? -1;
 	} else {
 		offset = offset ?? 0;
 		length = length ?? buffer.byteLength - offset;
@@ -2137,46 +2108,48 @@ writeFile[kCustomPromisifiedSymbol] = (file, data, options) => {
 	if (typeof options === "string") {
 		encoding = options;
 	} else {
-		encoding = options && options.encoding;
+		encoding = options?.encoding;
 	}
-	return new Promise(async (res, rej) => {
-		try {
-			if (!(typeof data === "string" || isArrayBufferView(data))) {
-				if (data instanceof Readable || isAsyncIterable(data)) {
-					const arr = [];
-					for await (const i of data) {
-						writeDataCheck(i);
-						if (typeof i === "string") {
-							arr.push(Buffer.from(i, encoding ?? "utf8"));
-						} else {
-							arr.push(Buffer.from(i));
+	return new Promise((res, rej) => {
+		async () => {
+			try {
+				if (!(typeof data === "string" || isArrayBufferView(data))) {
+					if (data instanceof Readable || isAsyncIterable(data)) {
+						const arr = [];
+						for await (const i of data) {
+							writeDataCheck(i);
+							if (typeof i === "string") {
+								arr.push(Buffer.from(i, encoding ?? "utf8"));
+							} else {
+								arr.push(Buffer.from(i));
+							}
 						}
-					}
-					data = Buffer.concat(arr);
-				} else if (isIterable(data)) {
-					const arr = [];
-					for (const i of data) {
-						writeDataCheck(i);
-						if (typeof i === "string") {
-							arr.push(Buffer.from(i, encoding ?? "utf8"));
-						} else {
-							arr.push(Buffer.from(i));
+						data = Buffer.concat(arr);
+					} else if (isIterable(data)) {
+						const arr = [];
+						for (const i of data) {
+							writeDataCheck(i);
+							if (typeof i === "string") {
+								arr.push(Buffer.from(i, encoding ?? "utf8"));
+							} else {
+								arr.push(Buffer.from(i));
+							}
 						}
+						data = Buffer.concat(arr);
 					}
-					data = Buffer.concat(arr);
 				}
+				writeFile(file, data, options, (err) => {
+					if (err !== null) {
+						rej(err);
+					} else {
+						res();
+					}
+				});
+			} catch (err) {
+				rej(err);
 			}
-			writeFile(file, data, options, (err) => {
-				if (err !== null) {
-					rej(err);
-				} else {
-					res();
-				}
-			});
-		} catch (err) {
-			rej(err);
-		}
-	});
+		};
+	})();
 };
 
 function writeFileSync(file, data, options = {}) {
@@ -2527,7 +2500,7 @@ function opendir(path, options, callback) {
 	path = getValidatedPath(path);
 	validateFunction(callback, "callback");
 
-	if (options && options.bufferSize !== undefined) {
+	if (options?.bufferSize !== undefined) {
 		validateInteger(options.bufferSize, "bufferSize", 1);
 	}
 
@@ -2553,7 +2526,7 @@ function opendir(path, options, callback) {
 function opendirSync(path, options) {
 	path = getValidatedPath(path);
 
-	if (options && options.bufferSize !== undefined) {
+	if (options?.bufferSize !== undefined) {
 		validateInteger(options.bufferSize, "bufferSize", 1);
 	}
 
@@ -2807,7 +2780,7 @@ class FileHandle extends EventEmitter {
 				errs.push(err2);
 			}
 		}
-		if (errs.length == 1) {
+		if (errs.length === 1) {
 			throw errs[0];
 		} else if (errs.length > 1) {
 			throw new errors.AggregateError(errs);
@@ -2838,7 +2811,7 @@ class FileHandle extends EventEmitter {
 				errs.push(err2);
 			}
 		}
-		if (errs.length == 1) {
+		if (errs.length === 1) {
 			throw errs[0];
 		} else if (errs.length > 1) {
 			throw new errors.AggregateError(errs);
@@ -2865,7 +2838,7 @@ class FileHandle extends EventEmitter {
 				errs.push(err2);
 			}
 		}
-		if (errs.length == 1) {
+		if (errs.length === 1) {
 			throw errs[0];
 		} else if (errs.length > 1) {
 			throw new errors.AggregateError(errs);

@@ -42,10 +42,10 @@ function ReadableState(options, stream, isDuplex) {
 
 	// Object stream flag. Used to make read(n) ignore n and to
 	// make all the buffer merging and length checks go away.
-	this.objectMode = !!(options && options.objectMode);
+	this.objectMode = !!options?.objectMode;
 
 	if (isDuplex) {
-		this.objectMode = this.objectMode || !!(options && options.readableObjectMode);
+		this.objectMode = this.objectMode || !!options?.readableObjectMode;
 	}
 
 	// The point at which it stops calling _read() to fill the buffer
@@ -113,7 +113,7 @@ function ReadableState(options, stream, isDuplex) {
 	// Crypto is kind of old and crusty.  Historically, its default string
 	// encoding is 'binary' so we have to make this configurable.
 	// Everything else in the universe uses 'utf8', though.
-	this.defaultEncoding = (options && options.defaultEncoding) || "utf8";
+	this.defaultEncoding = options?.defaultEncoding || "utf8";
 
 	// Ref the piped dest which we need a drain event on it
 	// type: null | Writable | Set<Writable>.
@@ -127,7 +127,7 @@ function ReadableState(options, stream, isDuplex) {
 
 	this.decoder = null;
 	this.encoding = null;
-	if (options && options.encoding) {
+	if (options?.encoding) {
 		this.decoder = new StringDecoder(options.encoding);
 		this.encoding = options.encoding;
 	}
@@ -511,7 +511,7 @@ function onEofChunk(stream, state) {
 	if (state.ended) return;
 	if (state.decoder) {
 		const chunk = state.decoder.end();
-		if (chunk && chunk.length) {
+		if (chunk?.length) {
 			state.buffer.push(chunk);
 			state.length += state.objectMode ? 1 : chunk.length;
 		}
@@ -1180,7 +1180,7 @@ Object.defineProperties(Readable.prototype, {
 	readableBuffer: {
 		enumerable: false,
 		get: function () {
-			return this._readableState && this._readableState.buffer;
+			return this._readableState?.buffer;
 		},
 	},
 

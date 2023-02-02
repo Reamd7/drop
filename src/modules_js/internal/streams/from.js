@@ -19,10 +19,10 @@ function _from(Readable, iterable, opts) {
 	}
 
 	let isAsync;
-	if (iterable && iterable[Symbol.asyncIterator]) {
+	if (iterable?.[Symbol.asyncIterator]) {
 		isAsync = true;
 		iterator = iterable[Symbol.asyncIterator]();
-	} else if (iterable && iterable[Symbol.iterator]) {
+	} else if (iterable?.[Symbol.iterator]) {
 		isAsync = false;
 		iterator = iterable[Symbol.iterator]();
 	} else {
