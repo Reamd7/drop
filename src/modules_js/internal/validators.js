@@ -163,13 +163,13 @@ export const getValidMode = hideStackFrames((mode, type) => {
 });
 
 export const validateArray = hideStackFrames((value, name, minLength = 0) => {
-  if (!Array.isArray(value)) {
-    throw new ERR_INVALID_ARG_TYPE(name, 'Array', value);
-  }
-  if (value.length < minLength) {
-    const reason = `must be longer than ${minLength}`;
-    throw new ERR_INVALID_ARG_VALUE(name, value, reason);
-  }
+	if (!Array.isArray(value)) {
+		throw new ERR_INVALID_ARG_TYPE(name, "Array", value);
+	}
+	if (value.length < minLength) {
+		const reason = `must be longer than ${minLength}`;
+		throw new ERR_INVALID_ARG_VALUE(name, value, reason);
+	}
 });
 
 export default {

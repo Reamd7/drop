@@ -56,7 +56,7 @@ import {
 	kWordLeft,
 	kWordRight,
 	kWriteToOutput,
-} from  "./internal/readline/interface";
+} from "./internal/readline/interface";
 import { clearLine, clearScreenDown, cursorTo, moveCursor } from "./internal/readline/callbacks";
 import { kEmptyObject, promisify } from "./internal/util";
 
@@ -70,7 +70,6 @@ import { validateAbortSignal } from "./internal/validators";
  * @typedef {import('./stream.js').Readable} Readable
  * @typedef {import('./stream.js').Writable} Writable
  */
-
 
 function Interface(input, output, completer, terminal) {
 	if (!(this instanceof Interface)) {

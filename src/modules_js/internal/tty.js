@@ -112,7 +112,7 @@ function getColorDepth(env = process.env) {
 	) {
 		return COLORS_2;
 	}
-	
+
 	if (env.TMUX) {
 		return COLORS_256;
 	}
