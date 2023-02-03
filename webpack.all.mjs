@@ -55,6 +55,7 @@ const libConfig = {
 		bufferExt: "buffer",
 		consoleExt: "console",
 		processExt: "process",
+		tty: "tty",
 	},
 	plugins: [
 		new AfterBuildPlugin(() => {
@@ -121,6 +122,9 @@ const libConfig = {
 	},
 	resolve: {
 		extensions: [".tsx", ".ts", ".jsx", ".js"],
+		fallback: {
+			tty: false
+		}
 	},
 };
 

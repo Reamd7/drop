@@ -6,8 +6,6 @@
 
 ### Interfaces
 
-- [BusyBoxRunOptions](interfaces/BusyBoxRunOptions.md)
-- [DropRunOptions](interfaces/DropRunOptions.md)
 - [RunOptions](interfaces/RunOptions.md)
 - [Runner](interfaces/Runner.md)
 
@@ -19,6 +17,7 @@
 ### Functions
 
 - [exec](modules.md#exec)
+- [run](modules.md#run)
 - [runBusy](modules.md#runbusy)
 - [runDrop](modules.md#rundrop)
 
@@ -32,7 +31,7 @@ Drop ABI variation
 
 #### Defined in
 
-[index.ts:10](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L10)
+[index.ts:9](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L9)
 
 ___
 
@@ -44,7 +43,7 @@ All available commands
 
 #### Defined in
 
-[index.ts:140](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L140)
+[index.ts:155](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L155)
 
 ## Functions
 
@@ -81,7 +80,31 @@ Runner to execute the command
 
 #### Defined in
 
-[index.ts:208](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L208)
+[index.ts:223](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L223)
+
+___
+
+### run
+
+▸ **run**(`opts`): [`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<[`Runner`](interfaces/Runner.md)\>
+
+Run a command (Drop or BusyBox)
+
+#### Parameters
+
+| Name | Type | Description |
+| :------ | :------ | :------ |
+| `opts` | [`RunOptions`](interfaces/RunOptions.md) | Options to run the command |
+
+#### Returns
+
+[`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<[`Runner`](interfaces/Runner.md)\>
+
+Runner to execute the command
+
+#### Defined in
+
+[index.ts:143](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L143)
 
 ___
 
@@ -109,7 +132,7 @@ exec();
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `opts` | [`BusyBoxRunOptions`](interfaces/BusyBoxRunOptions.md) | Options to run the command |
+| `opts` | [`RunOptions`](interfaces/RunOptions.md) | Options to run the command |
 
 #### Returns
 
@@ -119,7 +142,7 @@ Runner to execute the command
 
 #### Defined in
 
-[index.ts:106](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L106)
+[index.ts:114](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L114)
 
 ___
 
@@ -140,7 +163,7 @@ exec();
 
 | Name | Type | Description |
 | :------ | :------ | :------ |
-| `opts` | [`DropRunOptions`](interfaces/DropRunOptions.md) | Options to run the command |
+| `opts` | [`RunOptions`](interfaces/RunOptions.md) | Options to run the command |
 
 #### Returns
 
@@ -150,4 +173,4 @@ Runner to execute the command
 
 #### Defined in
 
-[index.ts:63](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L63)
+[index.ts:63](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L63)

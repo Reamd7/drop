@@ -24,7 +24,7 @@ Underlying native instance
 
 #### Defined in
 
-[index.ts:23](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L23)
+[index.ts:22](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L22)
 
 ## Methods
 
@@ -40,4 +40,4 @@ Execute the command
 
 #### Defined in
 
-[index.ts:25](https://github.com/zorse-lang/drop/blob/eff7e9e/src/npm/index.ts#L25)
+[index.ts:24](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L24)

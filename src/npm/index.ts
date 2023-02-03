@@ -1,6 +1,5 @@
 // @ts-ignore
 import DROP_WASM_BASE64 from "../../target/wasm32-wasi/release/drop.wasm";
-import { WASI as NodeWASI } from "wasi";
 import WASI from "wasi-js";
 import atob from "atob-lite";
 // this says "bindings/node", but we externalize all its dependencies
@@ -25,20 +24,21 @@ export interface Runner {
 	exec(): void | Promise<void>;
 }
 
-/** Base options to run a command in Drop */
+/** Base options to run a command in Drop/BusyBox */
 export interface RunOptions {
-	/** Command line arguments */
-	readonly args?: string[];
+	/** Module option accepted by EMCC runtime / Rust runtime */
+	readonly Module: {
+		/** Print to stdout */
+		print?: (str: string) => void;
+		/** Print to stderr */
+		printErr?: (str: string) => void;
+		/** Command line arguments */
+		arguments: string[];
+	};
 	/** ABI variant to use */
 	readonly variant?: ABIVariant;
-}
-
-/** Options to run a Drop command (NodeJS subset emulation) */
-export interface DropRunOptions extends RunOptions {
-	/** File to run, can be .[cm]js, .[cm]ts, or .[cm]tsx */
-	readonly file: string;
-	/** Buffer as input to  */
-	readonly buffer?: BufferSource;
+	/** Whether to run in a TTY (default: true) */
+	readonly tty?: boolean;
 }
 
 function decode(encoded: string) {
@@ -60,17 +60,32 @@ function decode(encoded: string) {
  * exec();
  * ```
  */
-export async function runDrop(opts: DropRunOptions): Promise<Runner> {
+export async function runDrop(opts: RunOptions): Promise<Runner> {
 	const variant = opts.variant || getDefaultABIVariant();
+	const file = opts.Module.arguments.find((arg) => !arg.startsWith("-"));
+	const newArgs = opts.Module.arguments.filter((arg) => !arg.startsWith("-"));
 	const sharedOpts = {
 		preopens: { [process.cwd()]: ".", ".": "." },
-		args: ["drop", opts.file, ...(opts.args || [])],
+		args: ["drop", file, ...newArgs],
 		env: process.env,
 	};
+	let NodeWASI: typeof import("wasi").WASI;
+	const dimport = (x: string) => new Function(`return import(${JSON.stringify(x)})`).call(0);
+	if (variant === "node") {
+		const wasi = await dimport("wasi");
+		NodeWASI = wasi.WASI;
+	}
 	const wasi =
-		variant === "node" ? new NodeWASI({ returnOnExit: true, ...sharedOpts }) : new WASI({ bindings, ...sharedOpts });
+		variant === "node"
+			? new NodeWASI({ returnOnExit: true, ...sharedOpts })
+			: new WASI({
+					bindings: { ...bindings, isTTY: () => opts.tty ?? true },
+					...sharedOpts,
+					sendStdout: (buf) => opts.Module?.print?.(buf.toString()),
+					sendStderr: (buf) => opts.Module?.printErr?.(buf.toString()),
+			  });
 	const importObject = { wasi_snapshot_preview1: wasi.wasiImport };
-	const buffer = opts.buffer || decode(DROP_WASM_BASE64);
+	const buffer = decode(DROP_WASM_BASE64);
 	const wasm = await WebAssembly.compile(buffer);
 	const instance = await WebAssembly.instantiate(wasm, importObject);
 	return {
@@ -79,11 +94,6 @@ export async function runDrop(opts: DropRunOptions): Promise<Runner> {
 			wasi.start(instance);
 		},
 	};
-}
-
-/** Options to run a BusyBox command (POSIX subset emulation) */
-export interface BusyBoxRunOptions extends RunOptions {
-	readonly Module?: {};
 }
 
 /**
@@ -101,9 +111,9 @@ export interface BusyBoxRunOptions extends RunOptions {
  * exec();
  * ```
  */
-export async function runBusy(opts: BusyBoxRunOptions): Promise<Runner> {
-	const cmd = opts.args?.[0] ?? "--help";
-	const newArgs = opts.args?.slice(1);
+export async function runBusy(opts: RunOptions): Promise<Runner> {
+	const cmd = opts.Module.arguments?.[0] ?? "--help";
+	const newArgs = opts.Module.arguments?.slice(1);
 	const oldProcArgv = process.argv;
 	process.argv = ["drop", cmd === "zip" ? "nanozip" : cmd];
 	const variant = opts.variant || getDefaultABIVariant();
@@ -125,9 +135,17 @@ export async function runBusy(opts: BusyBoxRunOptions): Promise<Runner> {
 	};
 }
 
-async function run(opts: DropRunOptions | BusyBoxRunOptions): Promise<Runner> {
-	if ("file" in opts) {
-		return await runDrop(opts);
+/**
+ * Run a command (Drop or BusyBox)
+ * @param opts Options to run the command
+ * @returns Runner to execute the command
+ */
+export async function run(opts: RunOptions): Promise<Runner> {
+	const bin = opts.Module.arguments?.[0];
+	if (bin === "drop" || bin === "node") {
+		const _optsCopy = { ...opts };
+		_optsCopy.Module.arguments = _optsCopy.Module.arguments.slice(1);
+		return await runDrop(_optsCopy);
 	} else {
 		return await runBusy(opts);
 	}
@@ -206,10 +224,10 @@ export async function exec(cmd: ExecCommand, ...args: string[]): Promise<void> {
 	switch (cmd) {
 		case "drop":
 		case "node": {
-			return await (await run({ file: args[0], args: args.slice(1) })).exec();
+			return await (await run({ Module: { arguments: ["node", ...args] } })).exec();
 		}
 		default: {
-			return await (await run({ args: [cmd, ...args] })).exec();
+			return await (await run({ Module: { arguments: [cmd, ...args] } })).exec();
 		}
 	}
 }
