@@ -25,12 +25,13 @@ Module option accepted by EMCC runtime / Rust runtime
 | Name | Type | Description |
 | :------ | :------ | :------ |
 | `arguments` | `string`[] | Command line arguments |
+| `fs?` | `any` | Platform specific pre-constructed FileSystem object |
 | `print?` | (`str`: `string`) => `void` | Print to stdout |
 | `printErr?` | (`str`: `string`) => `void` | Print to stderr |
 
 #### Defined in
 
-[index.ts:30](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L30)
+[index.ts:44](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L44)
 
 ___
 
@@ -42,7 +43,7 @@ Whether to run in a TTY (default: true)
 
 #### Defined in
 
-[index.ts:41](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L41)
+[index.ts:57](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L57)
 
 ___
 
@@ -54,4 +55,4 @@ ABI variant to use
 
 #### Defined in
 
-[index.ts:39](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L39)
+[index.ts:55](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L55)

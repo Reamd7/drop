@@ -24,20 +24,20 @@ Underlying native instance
 
 #### Defined in
 
-[index.ts:22](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L22)
+[index.ts:36](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L36)
 
 ## Methods
 
 ### exec
 
-▸ **exec**(): `void` \| [`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<`void`\>
+▸ **exec**(): `number` \| [`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<`number`\>
 
 Execute the command
 
 #### Returns
 
-`void` \| [`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<`void`\>
+`number` \| [`Promise`]( https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise )<`number`\>
 
 #### Defined in
 
-[index.ts:24](https://github.com/zorse-lang/drop/blob/19c1cc1/src/npm/index.ts#L24)
+[index.ts:38](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L38)

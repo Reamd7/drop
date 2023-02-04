@@ -1,12 +1,26 @@
 // @ts-ignore
 import DROP_WASM_BASE64 from "../../target/wasm32-wasi/release/drop.wasm";
 import WASI from "wasi-js";
+import type { WASIBindings } from "wasi-js";
 import atob from "atob-lite";
-// this says "bindings/node", but we externalize all its dependencies
-import bindings from "wasi-js/dist/bindings/node";
+import path from "path";
+import { randomFillSync } from "crypto";
 
 /** Drop ABI variation */
 export type ABIVariant = "node" | "web";
+const dimport = (x: string) => new Function(`return import(${JSON.stringify(x)})`).call(0);
+const BINDINGS_COMMON: Partial<WASIBindings> = {
+	hrtime: process.hrtime.bigint,
+	exit(code: number) {
+		this.exitCode = code;
+	},
+	kill(signal: string) {
+		this.exitCode = 128 + signal.charCodeAt(0);
+	},
+	randomFillSync,
+	isTTY: () => true,
+	path,
+};
 
 function getDefaultABIVariant(): ABIVariant {
 	if (typeof window !== "undefined" || typeof postMessage !== "undefined") {
@@ -21,7 +35,7 @@ export interface Runner {
 	/** Underlying native instance */
 	readonly instance: object;
 	/** Execute the command */
-	exec(): void | Promise<void>;
+	exec(): number | Promise<number>;
 }
 
 /** Base options to run a command in Drop/BusyBox */
@@ -34,6 +48,8 @@ export interface RunOptions {
 		printErr?: (str: string) => void;
 		/** Command line arguments */
 		arguments: string[];
+		/** Platform specific pre-constructed FileSystem object */
+		fs?: any;
 	};
 	/** ABI variant to use */
 	readonly variant?: ABIVariant;
@@ -70,7 +86,6 @@ export async function runDrop(opts: RunOptions): Promise<Runner> {
 		env: process.env,
 	};
 	let NodeWASI: typeof import("wasi").WASI;
-	const dimport = (x: string) => new Function(`return import(${JSON.stringify(x)})`).call(0);
 	if (variant === "node") {
 		const wasi = await dimport("wasi");
 		NodeWASI = wasi.WASI;
@@ -79,7 +94,7 @@ export async function runDrop(opts: RunOptions): Promise<Runner> {
 		variant === "node"
 			? new NodeWASI({ returnOnExit: true, ...sharedOpts })
 			: new WASI({
-					bindings: { ...bindings, isTTY: () => opts.tty ?? true },
+					bindings: { ...BINDINGS_COMMON, fs: opts.Module.fs || (await dimport("fs")) } as WASIBindings,
 					...sharedOpts,
 					sendStdout: (buf) => opts.Module?.print?.(buf.toString()),
 					sendStderr: (buf) => opts.Module?.printErr?.(buf.toString()),
@@ -91,7 +106,12 @@ export async function runDrop(opts: RunOptions): Promise<Runner> {
 	return {
 		instance,
 		exec: () => {
-			wasi.start(instance);
+			if (variant === "node") {
+				return wasi.start(instance);
+			} else {
+				wasi.start(instance);
+				return ((wasi as WASI).bindings as any).exitCode;
+			}
 		},
 	};
 }
@@ -210,7 +230,7 @@ export type ExecCommand =
  * Convenience function to run an either a Drop or BusyBox command
  * @param cmd Command to run
  * @param args Arguments to pass to the command
- * @returns Runner to execute the command
+ * @returns Exit code of the command
  * @example
  * ```ts
  * await exec("node", "index.ts");
@@ -220,7 +240,7 @@ export type ExecCommand =
  * await exec("ls", "-la");
  * ```
  */
-export async function exec(cmd: ExecCommand, ...args: string[]): Promise<void> {
+export async function exec(cmd: ExecCommand, ...args: string[]): Promise<number> {
 	switch (cmd) {
 		case "drop":
 		case "node": {
