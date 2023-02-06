@@ -1,13 +1,91 @@
-use crate::event_loop::wasi_fs;
+use wasi::Fd;
+
 use crate::event_loop::PollResult;
 use crate::quickjs_sys::*;
 use std::convert::TryInto;
+use std::ffi::CStr;
+use std::ffi::CString;
 use std::fs;
 use std::fs::Permissions;
 use std::io;
 use std::os::wasi::prelude::FromRawFd;
+use std::ptr;
 use std::time::SystemTime;
 use std::time::UNIX_EPOCH;
+
+/// Attempts to open a bare path `p`.
+///
+/// WASI has no fundamental capability to do this. All syscalls and operations
+/// are relative to already-open file descriptors. The C library, however,
+/// manages a map of pre-opened file descriptors to their path, and then the C
+/// library provides an API to look at this. In other words, when you want to
+/// open a path `p`, you have to find a previously opened file descriptor in a
+/// global table and then see if `p` is relative to that file descriptor.
+///
+/// This function, if successful, will return two items:
+///
+/// * The first is a `ManuallyDrop<WasiFd>`. This represents a pre-opened file
+///   descriptor which we don't have ownership of, but we can use. You shouldn't
+///   actually drop the `fd`.
+///
+/// * The second is a path that should be a part of `p` and represents a
+///   relative traversal from the file descriptor specified to the desired
+///   location `p`.
+///
+/// If successful you can use the returned file descriptor to perform
+/// file-descriptor-relative operations on the path returned as well. The
+/// `rights` argument indicates what operations are desired on the returned file
+/// descriptor, and if successful the returned file descriptor should have the
+/// appropriate rights for performing `rights` actions.
+///
+/// Note that this can fail if `p` doesn't look like it can be opened relative
+/// to any pre-opened file descriptor.
+pub fn open_parent(p: &str) -> io::Result<(Fd, String)> {
+    let p = CString::new(p.as_bytes())?;
+    let mut buf = Vec::<u8>::with_capacity(512);
+    loop {
+        unsafe {
+            let mut relative_path = buf.as_ptr().cast();
+            let mut abs_prefix = ptr::null();
+            let fd = __wasilibc_find_relpath(
+                p.as_ptr(),
+                &mut abs_prefix,
+                &mut relative_path,
+                buf.capacity(),
+            );
+            if fd == -1 {
+                if io::Error::last_os_error().raw_os_error() == Some(libc::ENOMEM) {
+                    // Trigger the internal buffer resizing logic of `Vec` by requiring
+                    // more space than the current capacity.
+                    let cap = buf.capacity();
+                    buf.set_len(cap);
+                    buf.reserve(1);
+                    continue;
+                }
+                let msg = format!(
+                    "failed to find a pre-opened file descriptor \
+                     through which {:?} could be opened",
+                    p
+                );
+                // io::ErrorKind::Uncategorized is unstable
+                // return Err(io::Error::new(io::ErrorKind::Uncategorized, msg));
+                return Err(io::Error::new(io::ErrorKind::Other, msg));
+            }
+            let relative = CStr::from_ptr(relative_path).to_bytes().to_vec();
+
+            return Ok((fd as Fd, String::from_utf8(relative).unwrap()));
+        }
+    }
+
+    extern "C" {
+        pub fn __wasilibc_find_relpath(
+            path: *const libc::c_char,
+            abs_prefix: *mut *const libc::c_char,
+            relative_path: *mut *const libc::c_char,
+            relative_path_len: libc::size_t,
+        ) -> libc::c_int;
+    }
+}
 
 impl From<u64> for JsValue {
     fn from(val: u64) -> Self {
@@ -28,32 +106,32 @@ fn permissions_to_mode(permit: Permissions) -> i32 {
     p | p << 3 | p << 6
 }
 
-fn stat_to_js_object(ctx: &mut Context, stat: wasi_fs::Filestat) -> JsValue {
+fn stat_to_js_object(ctx: &mut Context, stat: wasi::Filestat) -> JsValue {
     let mut res = ctx.new_object();
     res.set(
         "is_file",
-        (stat.filetype == wasi_fs::FILETYPE_REGULAR_FILE).into(),
+        (stat.filetype == wasi::FILETYPE_REGULAR_FILE).into(),
     );
     res.set(
         "is_directory",
-        (stat.filetype == wasi_fs::FILETYPE_DIRECTORY).into(),
+        (stat.filetype == wasi::FILETYPE_DIRECTORY).into(),
     );
     res.set(
         "is_symlink",
-        (stat.filetype == wasi_fs::FILETYPE_SYMBOLIC_LINK).into(),
+        (stat.filetype == wasi::FILETYPE_SYMBOLIC_LINK).into(),
     );
     res.set(
         "is_block_device",
-        (stat.filetype == wasi_fs::FILETYPE_BLOCK_DEVICE).into(),
+        (stat.filetype == wasi::FILETYPE_BLOCK_DEVICE).into(),
     );
     res.set(
         "is_char_device",
-        (stat.filetype == wasi_fs::FILETYPE_CHARACTER_DEVICE).into(),
+        (stat.filetype == wasi::FILETYPE_CHARACTER_DEVICE).into(),
     );
     res.set(
         "is_socket",
-        (stat.filetype == wasi_fs::FILETYPE_SOCKET_DGRAM
-            || stat.filetype == wasi_fs::FILETYPE_SOCKET_STREAM)
+        (stat.filetype == wasi::FILETYPE_SOCKET_DGRAM
+            || stat.filetype == wasi::FILETYPE_SOCKET_STREAM)
             .into(),
     );
     res.set("size", stat.size.into());
@@ -72,11 +150,12 @@ fn stat_to_js_object(ctx: &mut Context, stat: wasi_fs::Filestat) -> JsValue {
     JsValue::Object(res)
 }
 
-fn err_to_js_object(ctx: &mut Context, e: io::Error) -> JsValue {
-    errno_to_js_object(ctx, wasi_fs::Errno(e.raw_os_error().unwrap() as u16))
+fn err_to_js_object(_ctx: &mut Context, e: io::Error) -> JsValue {
+    panic!("err_to_js_object: {:?}", e);
+    // errno_to_js_object(ctx, wasi::Errno(e.raw_os_error().unwrap() as u16))
 }
 
-fn errno_to_js_object(ctx: &mut Context, e: wasi_fs::Errno) -> JsValue {
+fn errno_to_js_object(ctx: &mut Context, e: wasi::Errno) -> JsValue {
     let mut res = ctx.new_object();
     res.set("message", JsValue::String(ctx.new_string(e.message())));
     res.set("code", JsValue::String(ctx.new_string(e.name())));
@@ -90,7 +169,7 @@ fn stat_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
         return JsValue::UnDefined;
     }
     if let JsValue::String(s) = path.unwrap() {
-        let (dir, file) = match wasi_fs::open_parent(s.as_str()) {
+        let (dir, file) = match open_parent(s.as_str()) {
             Ok(ok) => ok,
             Err(e) => {
                 return {
@@ -100,7 +179,7 @@ fn stat_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
             }
         };
         return match unsafe {
-            wasi_fs::path_filestat_get(dir, wasi_fs::LOOKUPFLAGS_SYMLINK_FOLLOW, file.as_str())
+            wasi::path_filestat_get(dir, wasi::LOOKUPFLAGS_SYMLINK_FOLLOW, file.as_str())
         } {
             Ok(stat) => stat_to_js_object(ctx, stat),
             Err(e) => {
@@ -119,7 +198,7 @@ fn fstat_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
         return JsValue::UnDefined;
     }
     if let Some(f) = get_js_number(fd) {
-        return match unsafe { wasi_fs::fd_filestat_get(f as u32) } {
+        return match unsafe { wasi::fd_filestat_get(f as u32) } {
             Ok(stat) => stat_to_js_object(ctx, stat),
             Err(e) => {
                 let err = errno_to_js_object(ctx, e);
@@ -137,7 +216,7 @@ fn lstat_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
         return JsValue::UnDefined;
     }
     if let JsValue::String(s) = path.unwrap() {
-        let (dir, file) = match wasi_fs::open_parent(s.as_str()) {
+        let (dir, file) = match open_parent(s.as_str()) {
             Ok(ok) => ok,
             Err(e) => {
                 return {
@@ -146,7 +225,7 @@ fn lstat_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
                 }
             }
         };
-        return match unsafe { wasi_fs::path_filestat_get(dir, 0, file.as_str()) } {
+        return match unsafe { wasi::path_filestat_get(dir, 0, file.as_str()) } {
             Ok(stat) => stat_to_js_object(ctx, stat),
             Err(e) => {
                 let err = errno_to_js_object(ctx, e);
@@ -301,7 +380,7 @@ fn ftruncate_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsV
     }
     if let Some(JsValue::Int(f)) = fd {
         if let Some(l) = get_js_number(len) {
-            let res = unsafe { wasi_fs::fd_filestat_set_size(*f as u32, l as u64) };
+            let res = unsafe { wasi::fd_filestat_set_size(*f as u32, l as u64) };
             return match res {
                 Ok(()) => JsValue::UnDefined,
                 Err(e) => {
@@ -320,7 +399,7 @@ fn realpath_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVa
         return JsValue::UnDefined;
     }
     if let Some(JsValue::String(p)) = path {
-        let (dir, file) = match wasi_fs::open_parent(p.as_str()) {
+        let (dir, file) = match open_parent(p.as_str()) {
             Ok(ok) => ok,
             Err(e) => {
                 return {
@@ -330,8 +409,7 @@ fn realpath_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVa
             }
         };
         let mut buf = vec![0; 1024];
-        let res =
-            unsafe { wasi_fs::path_readlink(dir, file.as_str(), buf.as_mut_ptr(), buf.len()) };
+        let res = unsafe { wasi::path_readlink(dir, file.as_str(), buf.as_mut_ptr(), buf.len()) };
         return match res {
             Ok(size) => ctx
                 .new_string(std::str::from_utf8(&buf[0..size]).unwrap())
@@ -395,7 +473,7 @@ fn symlink_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVal
     }
     if let Some(JsValue::String(from)) = from_path {
         if let Some(JsValue::String(to)) = to_path {
-            let (dir, file) = match wasi_fs::open_parent(to.as_str()) {
+            let (dir, file) = match open_parent(to.as_str()) {
                 Ok(ok) => ok,
                 Err(e) => {
                     return {
@@ -404,7 +482,7 @@ fn symlink_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVal
                     }
                 }
             };
-            let res = unsafe { wasi_fs::path_symlink(from.as_str(), dir, file.as_str()) };
+            let res = unsafe { wasi::path_symlink(from.as_str(), dir, file.as_str()) };
             return match res {
                 Ok(_) => JsValue::UnDefined,
                 Err(e) => {
@@ -427,7 +505,7 @@ fn utime_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
     if let Some(JsValue::String(p)) = path {
         if let Some(a) = get_js_number(atime) {
             if let Some(m) = get_js_number(mtime) {
-                let (dir, file) = match wasi_fs::open_parent(p.as_str()) {
+                let (dir, file) = match open_parent(p.as_str()) {
                     Ok(ok) => ok,
                     Err(e) => {
                         return {
@@ -437,13 +515,13 @@ fn utime_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
                     }
                 };
                 let res = unsafe {
-                    wasi_fs::path_filestat_set_times(
+                    wasi::path_filestat_set_times(
                         dir,
-                        wasi_fs::LOOKUPFLAGS_SYMLINK_FOLLOW,
+                        wasi::LOOKUPFLAGS_SYMLINK_FOLLOW,
                         file.as_str(),
                         (a as u64) * 1000000,
                         (m as u64) * 1000000,
-                        wasi_fs::FSTFLAGS_ATIM | wasi_fs::FSTFLAGS_MTIM,
+                        wasi::FSTFLAGS_ATIM | wasi::FSTFLAGS_MTIM,
                     )
                 };
                 return match res {
@@ -469,7 +547,7 @@ fn lutime_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
     if let Some(JsValue::String(p)) = path {
         if let Some(a) = get_js_number(atime) {
             if let Some(m) = get_js_number(mtime) {
-                let (dir, file) = match wasi_fs::open_parent(p.as_str()) {
+                let (dir, file) = match open_parent(p.as_str()) {
                     Ok(ok) => ok,
                     Err(e) => {
                         return {
@@ -479,13 +557,13 @@ fn lutime_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
                     }
                 };
                 let res = unsafe {
-                    wasi_fs::path_filestat_set_times(
+                    wasi::path_filestat_set_times(
                         dir,
                         0,
                         file.as_str(),
                         (a as u64) * 1000000,
                         (m as u64) * 1000000,
-                        wasi_fs::FSTFLAGS_ATIM | wasi_fs::FSTFLAGS_MTIM,
+                        wasi::FSTFLAGS_ATIM | wasi::FSTFLAGS_MTIM,
                     )
                 };
                 return match res {
@@ -512,11 +590,11 @@ fn futime_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
         if let Some(JsValue::Float(a)) = atime {
             if let Some(JsValue::Float(m)) = mtime {
                 let res = unsafe {
-                    wasi_fs::fd_filestat_set_times(
+                    wasi::fd_filestat_set_times(
                         *f as u32,
                         *a as u64,
                         *m as u64,
-                        wasi_fs::FSTFLAGS_ATIM | wasi_fs::FSTFLAGS_MTIM,
+                        wasi::FSTFLAGS_ATIM | wasi::FSTFLAGS_MTIM,
                     )
                 };
                 return match res {
@@ -538,7 +616,7 @@ fn fclose_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
         return JsValue::UnDefined;
     }
     if let Some(JsValue::Int(f)) = fd {
-        let res = unsafe { wasi_fs::fd_close(*f as u32) };
+        let res = unsafe { wasi::fd_close(*f as u32) };
         return match res {
             Ok(_) => JsValue::UnDefined,
             Err(e) => {
@@ -556,7 +634,7 @@ fn fdatasync_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsV
         return JsValue::UnDefined;
     }
     if let Some(JsValue::Int(f)) = fd {
-        let res = unsafe { wasi_fs::fd_datasync(*f as u32) };
+        let res = unsafe { wasi::fd_datasync(*f as u32) };
         return match res {
             Ok(_) => JsValue::UnDefined,
             Err(e) => {
@@ -574,7 +652,7 @@ fn fsync_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
         return JsValue::UnDefined;
     }
     if let Some(JsValue::Int(f)) = fd {
-        let res = unsafe { wasi_fs::fd_sync(*f as u32) };
+        let res = unsafe { wasi::fd_sync(*f as u32) };
         return match res {
             Ok(_) => JsValue::UnDefined,
             Err(e) => {
@@ -635,9 +713,9 @@ fn fread_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
                 let mut buf = vec![0; len];
                 let res = if position >= 0 {
                     unsafe {
-                        wasi_fs::fd_pread(
+                        wasi::fd_pread(
                             *fd as u32,
-                            &[wasi_fs::Iovec {
+                            &[wasi::Iovec {
                                 buf: buf.as_mut_ptr(),
                                 buf_len: len,
                             }],
@@ -646,9 +724,9 @@ fn fread_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue
                     }
                 } else {
                     unsafe {
-                        wasi_fs::fd_read(
+                        wasi::fd_read(
                             *fd as u32,
-                            &[wasi_fs::Iovec {
+                            &[wasi::Iovec {
                                 buf: buf.as_mut_ptr(),
                                 buf_len: len,
                             }],
@@ -676,47 +754,47 @@ fn open_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
         if let Some(JsValue::Int(flag)) = arg.get(1) {
             if let Some(JsValue::Int(_mode)) = arg.get(2) {
                 let fdflag = if flag & 128 == 128 {
-                    wasi_fs::FDFLAGS_NONBLOCK
+                    wasi::FDFLAGS_NONBLOCK
                 } else {
                     // passing this here seems unnecessary and actually crashes wasmtime?
-                    // wasi_fs::FDFLAGS_SYNC
+                    // wasi::FDFLAGS_SYNC
                     0
                 } | if flag & 8 == 8 {
-                    wasi_fs::FDFLAGS_APPEND
+                    wasi::FDFLAGS_APPEND
                 } else {
                     0
                 };
                 let oflag = if flag & 512 == 512 {
-                    wasi_fs::OFLAGS_CREAT
+                    wasi::OFLAGS_CREAT
                 } else {
                     0
                 } | if flag & 2048 == 2048 {
-                    wasi_fs::OFLAGS_EXCL
+                    wasi::OFLAGS_EXCL
                 } else {
                     0
                 } | if flag & 1024 == 1024 {
-                    wasi_fs::OFLAGS_TRUNC
+                    wasi::OFLAGS_TRUNC
                 } else {
                     0
                 };
                 let right = if flag & 1 == 1 || flag & 2 == 2 {
-                    wasi_fs::RIGHTS_FD_WRITE
-                        | wasi_fs::RIGHTS_FD_ADVISE
-                        | wasi_fs::RIGHTS_FD_ALLOCATE
-                        | wasi_fs::RIGHTS_FD_DATASYNC
-                        | wasi_fs::RIGHTS_FD_FDSTAT_SET_FLAGS
-                        | wasi_fs::RIGHTS_FD_FILESTAT_SET_SIZE
-                        | wasi_fs::RIGHTS_FD_FILESTAT_SET_TIMES
-                        | wasi_fs::RIGHTS_FD_SYNC
-                        | wasi_fs::RIGHTS_FD_WRITE
+                    wasi::RIGHTS_FD_WRITE
+                        | wasi::RIGHTS_FD_ADVISE
+                        | wasi::RIGHTS_FD_ALLOCATE
+                        | wasi::RIGHTS_FD_DATASYNC
+                        | wasi::RIGHTS_FD_FDSTAT_SET_FLAGS
+                        | wasi::RIGHTS_FD_FILESTAT_SET_SIZE
+                        | wasi::RIGHTS_FD_FILESTAT_SET_TIMES
+                        | wasi::RIGHTS_FD_SYNC
+                        | wasi::RIGHTS_FD_WRITE
                 } else {
                     0
-                } | wasi_fs::RIGHTS_FD_FILESTAT_GET
-                    | wasi_fs::RIGHTS_FD_SEEK
-                    | wasi_fs::RIGHTS_POLL_FD_READWRITE
-                    | wasi_fs::RIGHTS_FD_READ
-                    | wasi_fs::RIGHTS_FD_READDIR;
-                let (dir, file) = match wasi_fs::open_parent(path.as_str()) {
+                } | wasi::RIGHTS_FD_FILESTAT_GET
+                    | wasi::RIGHTS_FD_SEEK
+                    | wasi::RIGHTS_POLL_FD_READWRITE
+                    | wasi::RIGHTS_FD_READ
+                    | wasi::RIGHTS_FD_READDIR;
+                let (dir, file) = match open_parent(path.as_str()) {
                     Ok(ok) => ok,
                     Err(e) => {
                         return {
@@ -726,7 +804,7 @@ fn open_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
                     }
                 };
                 let res =
-                    unsafe { wasi_fs::path_open(dir, 0, file.as_str(), oflag, right, 0, fdflag) };
+                    unsafe { wasi::path_open(dir, 0, file.as_str(), oflag, right, 0, fdflag) };
                 return match res {
                     Ok(fd) => JsValue::Int(fd as i32),
                     Err(e) => {
@@ -743,7 +821,7 @@ fn open_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue 
 fn readlink_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValue {
     if let Some(JsValue::String(path)) = arg.get(0) {
         let mut buf = vec![0; 1024];
-        let (dir, file) = match wasi_fs::open_parent(path.as_str().into()) {
+        let (dir, file) = match open_parent(path.as_str().into()) {
             Ok(ok) => ok,
             Err(e) => {
                 return {
@@ -752,8 +830,7 @@ fn readlink_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVa
                 }
             }
         };
-        let res =
-            unsafe { wasi_fs::path_readlink(dir, file.as_str(), buf.as_mut_ptr(), buf.len()) };
+        let res = unsafe { wasi::path_readlink(dir, file.as_str(), buf.as_mut_ptr(), buf.len()) };
         return match res {
             Ok(_len) => match String::from_utf8(buf) {
                 Ok(s) => ctx.new_string(s.as_str()).into(),
@@ -806,9 +883,8 @@ fn fwrite_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
             if let Some(JsValue::Object(obj)) = arg.get(2) {
                 let buf = JsArrayBuffer(obj.js_ref().to_owned());
                 if *position >= 0 {
-                    let res = unsafe {
-                        wasi_fs::fd_seek(*fd as u32, *position as i64, wasi_fs::WHENCE_SET)
-                    };
+                    let res =
+                        unsafe { wasi::fd_seek(*fd as u32, *position as i64, wasi::WHENCE_SET) };
                     if let Err(e) = res {
                         let err = errno_to_js_object(ctx, e);
                         return JsValue::Exception(ctx.throw_error(err));
@@ -816,9 +892,9 @@ fn fwrite_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsValu
                 }
                 let data = buf.to_vec();
                 let res = unsafe {
-                    wasi_fs::fd_write(
+                    wasi::fd_write(
                         *fd as u32,
-                        &[wasi_fs::Ciovec {
+                        &[wasi::Ciovec {
                             buf: data.as_ptr(),
                             buf_len: data.len(),
                         }],
@@ -842,18 +918,18 @@ fn freaddir_sync(ctx: &mut Context, _this_val: JsValue, arg: &[JsValue]) -> JsVa
         if let Some(JsValue::Int(cookie)) = arg.get(1) {
             let mut buf = vec![0; 4096];
             let res = unsafe {
-                wasi_fs::fd_readdir(*fd as u32, buf.as_mut_ptr(), buf.len(), *cookie as u64)
+                wasi::fd_readdir(*fd as u32, buf.as_mut_ptr(), buf.len(), *cookie as u64)
             };
             return match res {
                 Ok(len) => {
-                    let s = std::mem::size_of::<wasi_fs::Dirent>();
+                    let s = std::mem::size_of::<wasi::Dirent>();
                     let mut idx = 0;
                     let mut data_pack = ctx.new_array();
                     let mut aidx = 0;
                     let mut dir_next = 0;
                     while (idx + s) < len.min(4096) {
                         let dir = unsafe {
-                            *(&buf[idx..(idx + s)] as *const [u8] as *const wasi_fs::Dirent)
+                            *(&buf[idx..(idx + s)] as *const [u8] as *const wasi::Dirent)
                         };
                         idx += s;
                         if (idx + dir.d_namlen as usize) >= len.min(4096) {

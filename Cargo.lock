@@ -227,6 +227,7 @@ dependencies = [
  "swc_ecma_visit",
  "tar",
  "url",
+ "wasi",
 ]
 
 [[package]]

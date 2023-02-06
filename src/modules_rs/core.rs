@@ -1,5 +1,4 @@
 use crate::quickjs_sys::*;
-use crate::EventLoop;
 use std::string::FromUtf8Error;
 
 fn set_timeout(ctx: &mut Context, _this_val: JsValue, argv: &[JsValue]) -> JsValue {

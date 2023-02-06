@@ -1,7 +1,5 @@
-mod poll;
-pub mod wasi_fs;
+use wasi::Subscription;
 
-use crate::event_loop::poll::{Eventtype, Subscription};
 use crate::{quickjs_sys as qjs, Context, JsValue};
 use std::borrow::BorrowMut;
 use std::cell::RefCell;
@@ -25,16 +23,16 @@ struct TimeoutTask {
 impl TimeoutTask {
     fn as_subscription(&self, index: usize) -> Subscription {
         let nanoseconds = self.timeout;
-        poll::Subscription {
+        wasi::Subscription {
             userdata: index as u64,
-            u: poll::SubscriptionU {
-                tag: poll::EVENTTYPE_CLOCK,
-                u: poll::SubscriptionUU {
-                    clock: poll::SubscriptionClock {
-                        id: poll::CLOCKID_REALTIME,
+            u: wasi::SubscriptionU {
+                tag: wasi::EVENTTYPE_CLOCK.raw(),
+                u: wasi::SubscriptionUU {
+                    clock: wasi::SubscriptionClock {
+                        id: wasi::CLOCKID_REALTIME,
                         timeout: nanoseconds as u64,
                         precision: 0,
-                        flags: poll::SUBCLOCKFLAGS_SUBSCRIPTION_CLOCK_ABSTIME,
+                        flags: wasi::SUBCLOCKFLAGS_SUBSCRIPTION_CLOCK_ABSTIME,
                     },
                 },
             },
@@ -51,12 +49,12 @@ struct FdReadTask {
 
 impl FdReadTask {
     fn as_subscription(&self, index: usize) -> Subscription {
-        poll::Subscription {
+        wasi::Subscription {
             userdata: index as u64,
-            u: poll::SubscriptionU {
-                tag: poll::EVENTTYPE_FD_READ,
-                u: poll::SubscriptionUU {
-                    fd_read: poll::SubscriptionFdReadwrite {
+            u: wasi::SubscriptionU {
+                tag: wasi::EVENTTYPE_FD_READ.raw(),
+                u: wasi::SubscriptionUU {
+                    fd_read: wasi::SubscriptionFdReadwrite {
                         file_descriptor: self.fd as u32,
                     },
                 },
@@ -74,12 +72,12 @@ struct FdWriteTask {
 
 impl FdWriteTask {
     fn as_subscription(&self, index: usize) -> Subscription {
-        poll::Subscription {
+        wasi::Subscription {
             userdata: index as u64,
-            u: poll::SubscriptionU {
-                tag: poll::EVENTTYPE_FD_WRITE,
-                u: poll::SubscriptionUU {
-                    fd_write: poll::SubscriptionFdReadwrite {
+            u: wasi::SubscriptionU {
+                tag: wasi::EVENTTYPE_FD_WRITE.raw(),
+                u: wasi::SubscriptionUU {
+                    fd_write: wasi::SubscriptionFdReadwrite {
                         file_descriptor: self.fd as u32,
                     },
                 },
@@ -139,11 +137,11 @@ impl IoSelector {
             return Ok(0);
         }
         let mut revent = vec![
-            poll::Event {
+            wasi::Event {
                 userdata: 0,
-                error: 0,
-                type_: 0,
-                fd_readwrite: poll::EventFdReadwrite {
+                error: wasi::ERRNO_SUCCESS,
+                type_: wasi::EVENTTYPE_CLOCK,
+                fd_readwrite: wasi::EventFdReadwrite {
                     nbytes: 0,
                     flags: 0,
                 },
@@ -152,19 +150,20 @@ impl IoSelector {
         ];
 
         let n = unsafe {
-            poll::poll_oneoff(
+            wasi::poll_oneoff(
                 subscription_vec.as_ptr(),
                 revent.as_mut_ptr(),
                 subscription_vec.len(),
             )
-        }?;
+            .unwrap()
+        };
 
         for i in 0..n {
             let event = revent[i];
             let index = event.userdata as usize;
             if let Some(task) = self.delete_task(index) {
                 match (task, event.type_) {
-                    (PollTask::Timeout(TimeoutTask { callback, .. }), poll::EVENTTYPE_CLOCK) => {
+                    (PollTask::Timeout(TimeoutTask { callback, .. }), wasi::EVENTTYPE_CLOCK) => {
                         callback(ctx, PollResult::Timeout);
                     }
                     (
@@ -174,10 +173,10 @@ impl IoSelector {
                             len,
                             callback,
                         }),
-                        poll::EVENTTYPE_FD_READ,
+                        wasi::EVENTTYPE_FD_READ,
                     ) => {
-                        if event.error > 0 {
-                            let e = io::Error::from_raw_os_error(event.error as i32);
+                        if event.error.raw() > 0 {
+                            let e = io::Error::from_raw_os_error(event.error.raw().into());
                             callback(ctx, PollResult::Error(e));
                             continue;
                         }
@@ -185,9 +184,9 @@ impl IoSelector {
                         let mut buf = vec![0u8; len];
                         let res = if pos >= 0 {
                             unsafe {
-                                wasi_fs::fd_pread(
+                                wasi::fd_pread(
                                     fd as u32,
-                                    &[wasi_fs::Iovec {
+                                    &[wasi::Iovec {
                                         buf: buf.as_mut_ptr(),
                                         buf_len: len,
                                     }],
@@ -196,9 +195,9 @@ impl IoSelector {
                             }
                         } else {
                             unsafe {
-                                wasi_fs::fd_read(
+                                wasi::fd_read(
                                     fd as u32,
-                                    &[wasi_fs::Iovec {
+                                    &[wasi::Iovec {
                                         buf: buf.as_mut_ptr(),
                                         buf_len: len,
                                     }],
@@ -225,16 +224,15 @@ impl IoSelector {
                             buf,
                             callback,
                         }),
-                        poll::EVENTTYPE_FD_WRITE,
+                        wasi::EVENTTYPE_FD_WRITE,
                     ) => {
-                        if event.error > 0 {
-                            let e = io::Error::from_raw_os_error(event.error as i32);
+                        if event.error.raw() > 0 {
+                            let e = io::Error::from_raw_os_error(event.error.raw().into());
                             callback(ctx, PollResult::Error(e));
                             continue;
                         }
                         if pos != -1 {
-                            let res =
-                                unsafe { wasi_fs::fd_seek(fd as u32, pos, wasi_fs::WHENCE_SET) };
+                            let res = unsafe { wasi::fd_seek(fd as u32, pos, wasi::WHENCE_SET) };
                             if let Err(e) = res {
                                 callback(
                                     ctx,
@@ -244,9 +242,9 @@ impl IoSelector {
                             }
                         }
                         let res = unsafe {
-                            wasi_fs::fd_write(
+                            wasi::fd_write(
                                 fd as u32,
-                                &[wasi_fs::Ciovec {
+                                &[wasi::Ciovec {
                                     buf: buf.as_ptr(),
                                     buf_len: buf.len(),
                                 }],
