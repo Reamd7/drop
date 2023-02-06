@@ -5,8 +5,8 @@ use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::{HashMap, LinkedList};
 use std::io;
-use std::mem::ManuallyDrop;
-use std::ops::Add;
+use std::mem::{zeroed, ManuallyDrop};
+use std::ops::{Add, Div};
 
 pub enum PollResult {
     Timeout,
@@ -22,7 +22,6 @@ struct TimeoutTask {
 
 impl TimeoutTask {
     fn as_subscription(&self, index: usize) -> Subscription {
-        let nanoseconds = self.timeout;
         wasi::Subscription {
             userdata: index as u64,
             u: wasi::SubscriptionU {
@@ -30,9 +29,9 @@ impl TimeoutTask {
                 u: wasi::SubscriptionUU {
                     clock: wasi::SubscriptionClock {
                         id: wasi::CLOCKID_REALTIME,
-                        timeout: nanoseconds as u64,
+                        timeout: self.timeout as u64,
                         precision: 0,
-                        flags: wasi::SUBCLOCKFLAGS_SUBSCRIPTION_CLOCK_ABSTIME,
+                        flags: 0, // passing flags here causes wasmtime to crash
                     },
                 },
             },
@@ -136,18 +135,8 @@ impl IoSelector {
         if subscription_vec.is_empty() {
             return Ok(0);
         }
-        let mut revent = vec![
-            wasi::Event {
-                userdata: 0,
-                error: wasi::ERRNO_SUCCESS,
-                type_: wasi::EVENTTYPE_CLOCK,
-                fd_readwrite: wasi::EventFdReadwrite {
-                    nbytes: 0,
-                    flags: 0,
-                },
-            };
-            subscription_vec.len()
-        ];
+
+        let mut revent: [wasi::Event; 1] = unsafe { zeroed() };
 
         let n = unsafe {
             wasi::poll_oneoff(
@@ -155,7 +144,9 @@ impl IoSelector {
                 revent.as_mut_ptr(),
                 subscription_vec.len(),
             )
-            .unwrap()
+            .unwrap_or_else(|e| {
+                panic!("failed to poll: {:?}", e);
+            })
         };
 
         for i in 0..n {
@@ -299,14 +290,8 @@ impl EventLoop {
         timeout: std::time::Duration,
         args: Option<Vec<JsValue>>,
     ) -> usize {
-        let ddl = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .add(timeout)
-            .as_nanos();
-
         let timeout_task = PollTask::Timeout(TimeoutTask {
-            timeout: ddl,
+            timeout: timeout.as_nanos().into(),
             callback: Box::new(move |_ctx, _res| {
                 match args {
                     Some(argv) => callback.call(&argv),
