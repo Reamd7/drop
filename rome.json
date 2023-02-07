@@ -7,10 +7,12 @@
   "files": {
     "maxSize": 20971520,
     "ignore": [
+      "src/modules_js/zlib.js",
       "src/modules_js/crypto.js",
-      "src/modules_js/uvu/assert.js",
       "src/modules_js/uvu.js",
-      "src/modules_js/zlib.js"
+      "src/modules_js/uvu/assert.js",
+      "src/modules_js/timers.js",
+      "src/modules_js/timers/promises.js"
     ]
   },
   "linter": {

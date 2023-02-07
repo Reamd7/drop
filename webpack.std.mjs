@@ -1,21 +1,26 @@
 import TerserPlugin from "terser-webpack-plugin";
+import glob from "glob";
 import path from "path";
 import webpack from "webpack";
 
-const ALL_PACKAGES = ["crypto", "zlib", "uvu", "uvu/assert"];
+const MOD_ROOT = "src/modules_js";
+const ALL_PACKAGES = glob
+	.sync(`${MOD_ROOT}/**/*.ts`)
+	.filter((p) => !p.endsWith(".d.ts"))
+	.map((p) => p.replace(`${MOD_ROOT}/`, "").replace(".ts", ""));
 const createConfig = (mod) => (_, { mode = "production" }) => {
 	const _mode = mode.toLowerCase().startsWith("p") ? "production" : "development";
 	/** @type {webpack.Configuration} */
 	const config = {
 		mode: _mode,
-		entry: `./src/modules_js/${mod}.ts`,
+		entry: `./${MOD_ROOT}/${mod}.ts`,
 		devtool: false,
 		target: mod === "crypto" ? "web" : "node",
 		experiments: {
 			outputModule: true,
 		},
 		output: {
-			path: path.resolve("src/modules_js"),
+			path: path.resolve(MOD_ROOT),
 			filename: `${mod}.js`,
 			chunkFormat: "module",
 			library: {
@@ -70,12 +75,6 @@ const createConfig = (mod) => (_, { mode = "production" }) => {
 				Url: ["url", "Url"],
 				Buffer: ["buffer", "Buffer"],
 				process: "process",
-				setTimeout: ["timers", "setTimeout"],
-				clearTimeout: ["timers", "clearTimeout"],
-				setInterval: ["timers", "setInterval"],
-				clearInterval: ["timers", "clearInterval"],
-				setImmediate: ["timers", "setImmediate"],
-				clearImmediate: ["timers", "clearImmediate"],
 			}),
 			new webpack.IgnorePlugin({
 				contextRegExp: /@babel\/core/,

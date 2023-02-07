@@ -48,6 +48,8 @@ node_modules
 /src/modules_js/zlib.js
 /src/modules_js/uvu.js
 /src/modules_js/uvu/assert.js
+/src/modules_js/timers.js
+/src/modules_js/timers/promises.js
 
 # Cargo
 /target
