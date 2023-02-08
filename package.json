@@ -1,6 +1,6 @@
 {
   "name": "@zorse/drop",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "private": false,
   "description": "NodeJS + POSIX Emulation in WASI and WASM",
   "main": "./dist/index.js",

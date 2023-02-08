@@ -1,6 +1,7 @@
 // @ts-ignore
 import DROP_WASM_BASE64 from "../../target/wasm32-wasi/release/drop.wasm";
-import WASI from "wasi-js";
+import IsoWASI from "wasi-js";
+import type { WASI as NodeWASI } from "wasi";
 import type { WASIBindings } from "wasi-js";
 import atob from "atob-lite";
 import path from "path";
@@ -35,7 +36,7 @@ export interface Runner {
 	/** Underlying native instance */
 	readonly instance: object;
 	/** Execute the command */
-	exec(): number | Promise<number>;
+	exec(): Promise<number>;
 }
 
 /** Base options to run a command in Drop/BusyBox */
@@ -66,6 +67,25 @@ function decode(encoded: string) {
 	return bytes.buffer;
 }
 
+function assertIsNodeWASI(wasi: any, abi: ABIVariant): asserts wasi is NodeWASI {
+	if (abi !== "node") {
+		throw new Error("Expected NodeWASI");
+	}
+}
+function assertIsIsoWASI(wasi: any, abi: ABIVariant): asserts wasi is IsoWASI {
+	if (abi !== "web") {
+		throw new Error("Expected IsoWASI");
+	}
+}
+function toNodeWASI(wasi: any, abi: ABIVariant): NodeWASI {
+	assertIsNodeWASI(wasi, abi);
+	return wasi;
+}
+function toIsoWASI(wasi: any, abi: ABIVariant): IsoWASI {
+	assertIsIsoWASI(wasi, abi);
+	return wasi;
+}
+
 /**
  * Run a Drop command (NodeJS subset emulation)
  * @param opts Options to run the command
@@ -85,15 +105,16 @@ export async function runDrop(opts: RunOptions): Promise<Runner> {
 		args: ["drop", file, ...newArgs],
 		env: process.env,
 	};
-	let NodeWASI: typeof import("wasi").WASI;
+	let NodeWASI: NodeWASI;
 	if (variant === "node") {
 		const wasi = await dimport("wasi");
 		NodeWASI = wasi.WASI;
 	}
 	const wasi =
 		variant === "node"
-			? new NodeWASI({ returnOnExit: true, ...sharedOpts })
-			: new WASI({
+			? // @ts-expect-error NodeWASI is dynamically imported
+			  new NodeWASI({ returnOnExit: true, ...sharedOpts })
+			: new IsoWASI({
 					bindings: { ...BINDINGS_COMMON, fs: opts.Module.fs || (await dimport("fs")) } as WASIBindings,
 					...sharedOpts,
 					sendStdout: (buf) => opts.Module?.print?.(buf.toString()),
@@ -105,12 +126,19 @@ export async function runDrop(opts: RunOptions): Promise<Runner> {
 	const instance = await WebAssembly.instantiate(wasm, importObject);
 	return {
 		instance,
-		exec: () => {
-			if (variant === "node") {
-				return wasi.start(instance);
-			} else {
-				wasi.start(instance);
-				return ((wasi as WASI).bindings as any).exitCode;
+		exec: async (): Promise<number> => {
+			try {
+				if (variant === "node") {
+					// https://nodejs.org/api/wasi.html#new-wasioptions
+					return toNodeWASI(wasi, variant).start(instance) as unknown as number;
+				} else {
+					const isoWasi = toIsoWASI(wasi, variant);
+					isoWasi.start(instance);
+					return (isoWasi.bindings as any).exitCode;
+				}
+			} catch (e) {
+				opts.Module.printErr?.(e.stack ?? e.message);
+				return 1;
 			}
 		},
 	};
@@ -141,16 +169,16 @@ export async function runBusy(opts: RunOptions): Promise<Runner> {
 	const instance = await factory(opts.Module);
 	return {
 		instance,
-		exec: () => {
-			const result = instance.callMain(newArgs);
-			if (result instanceof Promise) {
-				result.finally(() => {
-					process.argv = oldProcArgv;
-				});
-			} else {
+		exec: async (): Promise<number> => {
+			try {
+				const result = await instance.callMain(newArgs);
+				return result;
+			} catch (e) {
+				opts.Module.printErr?.(e.stack ?? e.message);
+				return 1;
+			} finally {
 				process.argv = oldProcArgv;
 			}
-			return result;
 		},
 	};
 }
@@ -195,6 +223,8 @@ export type ExecCommand =
 	| "ls"
 	| "md5sum"
 	| "mkdir"
+	| "mkfifo"
+	| "mknod"
 	| "mktemp"
 	| "mv"
 	| "nanozip"

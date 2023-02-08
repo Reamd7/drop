@@ -31,7 +31,7 @@ Module option accepted by EMCC runtime / Rust runtime
 
 #### Defined in
 
-[index.ts:44](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L44)
+[index.ts:45](https://github.com/zorse-lang/drop/blob/93e72f8/src/npm/index.ts#L45)
 
 ___
 
@@ -43,7 +43,7 @@ Whether to run in a TTY (default: true)
 
 #### Defined in
 
-[index.ts:57](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L57)
+[index.ts:58](https://github.com/zorse-lang/drop/blob/93e72f8/src/npm/index.ts#L58)
 
 ___
 
@@ -55,4 +55,4 @@ ABI variant to use
 
 #### Defined in
 
-[index.ts:55](https://github.com/zorse-lang/drop/blob/7de51ed/src/npm/index.ts#L55)
+[index.ts:56](https://github.com/zorse-lang/drop/blob/93e72f8/src/npm/index.ts#L56)
